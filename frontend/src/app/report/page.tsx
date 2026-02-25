@@ -29,16 +29,16 @@ export default function MonthlyReport() {
     useEffect(() => { fetchReport(); }, []);
 
     return (
-        <div className="flex flex-col p-6 min-h-[100dvh] max-w-md mx-auto bg-slate-50">
+        <div className="flex flex-col p-6 min-h-[100dvh] max-w-md mx-auto bg-slate-50 dark:bg-slate-900 transition-colors">
             <header className="flex items-center gap-4 mb-8">
                 <Link href="/" className="p-2 -ml-2 text-slate-400 hover:text-foreground text-xl">←</Link>
                 <h1 className="text-2xl font-bold">💌 월간 AI 리포트</h1>
             </header>
 
             {/* 월 선택 */}
-            <div className="flex items-center gap-3 mb-6 bg-white p-4 rounded-2xl shadow-soft">
-                <button onClick={() => { const d = new Date(year, month - 2, 1); setYear(d.getFullYear()); setMonth(d.getMonth() + 1); }} className="w-9 h-9 rounded-full bg-slate-50 hover:bg-haru-sky-light flex items-center justify-center">‹</button>
-                <span className="flex-1 text-center font-bold text-foreground">{year}년 {month}월</span>
+            <div className="flex items-center gap-3 mb-6 bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-soft">
+                <button onClick={() => { const d = new Date(year, month - 2, 1); setYear(d.getFullYear()); setMonth(d.getMonth() + 1); }} className="w-9 h-9 rounded-full bg-slate-50 dark:bg-slate-700 hover:bg-haru-sky-light flex items-center justify-center">‹</button>
+                <span className="flex-1 text-center font-bold text-foreground dark:text-slate-100">{year}년 {month}월</span>
                 <button onClick={() => { const d = new Date(year, month, 1); setYear(d.getFullYear()); setMonth(d.getMonth() + 1); }} className="w-9 h-9 rounded-full bg-slate-50 hover:bg-haru-sky-light flex items-center justify-center">›</button>
                 <button onClick={fetchReport} className="px-4 py-2 bg-haru-sky-medium text-haru-sky-deep font-bold rounded-xl text-sm hover:bg-haru-sky-accent transition-colors">분석</button>
             </div>
@@ -56,12 +56,12 @@ export default function MonthlyReport() {
                             이번 달 <span className="text-haru-sky-deep font-bold">{report.diary_count}개</span>의 일기를 쓰셨어요
                         </div>
                     )}
-                    <div className="bg-white p-6 rounded-3xl shadow-soft">
+                    <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-soft">
                         <div className="flex items-center gap-2 mb-4">
                             <span className="text-2xl">🤗</span>
                             <span className="text-sm font-bold text-slate-500">AI 카운슬러의 월간 리포트</span>
                         </div>
-                        <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{report.report}</p>
+                        <p className="text-sm text-slate-600 dark:text-slate-300 font-medium leading-relaxed whitespace-pre-wrap">{report.report}</p>
                     </div>
                     <div className="bg-haru-sky-light p-4 rounded-2xl border border-haru-sky-accent/30 text-xs text-slate-500 text-center">
                         이 리포트는 AI가 생성한 감정 분석 결과입니다.<br />전문 심리 상담을 대체하지 않습니다.

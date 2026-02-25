@@ -171,7 +171,7 @@ export default function DiaryWrite() {
     };
 
     return (
-        <div className="flex flex-col p-6 min-h-[100dvh] max-w-md mx-auto bg-white">
+        <div className="flex flex-col p-6 min-h-[100dvh] max-w-md mx-auto bg-white dark:bg-slate-900 transition-colors">
             <header className="flex items-center gap-4 mb-8">
                 <Link href="/" className="p-2 -ml-2 text-slate-400 hover:text-foreground">✕</Link>
                 <div>
@@ -182,19 +182,19 @@ export default function DiaryWrite() {
             <form onSubmit={handleSubmit} className="flex flex-col gap-6">
                 {/* 날짜 선택 */}
                 <div className="flex flex-col gap-2">
-                    <label className="text-sm font-semibold text-slate-500">날짜</label>
+                    <label className="text-sm font-semibold text-slate-500 dark:text-slate-400">날짜</label>
                     <input
                         type="date"
                         value={selectedDate}
                         onChange={(e) => setSelectedDate(e.target.value)}
                         max={new Date().toISOString().slice(0, 10)}
-                        className="w-full p-4 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-haru-sky-accent outline-none text-base font-medium text-slate-700"
+                        className="w-full p-4 bg-slate-50 dark:bg-slate-800 dark:text-slate-200 rounded-2xl border-none focus:ring-2 focus:ring-haru-sky-accent outline-none text-base font-medium text-slate-700"
                     />
                 </div>
 
                 {/* 기분 태그 */}
                 <div className="flex flex-col gap-2">
-                    <label className="text-sm font-semibold text-slate-500">오늘 기분은요?</label>
+                    <label className="text-sm font-semibold text-slate-500 dark:text-slate-400">오늘 기분은요?</label>
                     <div className="flex gap-2 flex-wrap">
                         {["😊", "😄", "😌", "🥰", "😢", "😰", "😤", "😴", "🤔", "😶"].map(emoji => (
                             <button
@@ -202,8 +202,8 @@ export default function DiaryWrite() {
                                 type="button"
                                 onClick={() => setSelectedMood(selectedMood === emoji ? "" : emoji)}
                                 className={`w-12 h-12 text-2xl rounded-2xl transition-all ${selectedMood === emoji
-                                        ? "bg-haru-sky-accent scale-110 shadow-soft"
-                                        : "bg-slate-50 hover:bg-haru-sky-light"
+                                    ? "bg-haru-sky-accent scale-110 shadow-soft"
+                                    : "bg-slate-50 dark:bg-slate-800 hover:bg-haru-sky-light"
                                     }`}
                             >
                                 {emoji}
@@ -214,24 +214,24 @@ export default function DiaryWrite() {
 
                 {/* 제목 */}
                 <div className="flex flex-col gap-2">
-                    <label className="text-sm font-semibold text-slate-500">제목</label>
+                    <label className="text-sm font-semibold text-slate-500 dark:text-slate-400">제목</label>
                     <input
                         type="text"
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
                         placeholder="오늘 하루는 어땠나요?"
-                        className="w-full p-4 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-haru-sky-accent outline-none text-lg font-medium"
+                        className="w-full p-4 bg-slate-50 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 rounded-2xl border-none focus:ring-2 focus:ring-haru-sky-accent outline-none text-lg font-medium"
                     />
                 </div>
 
                 {/* 카테고리 */}
                 <div className="flex flex-col gap-2">
-                    <label className="text-sm font-semibold text-slate-500">카테고리</label>
+                    <label className="text-sm font-semibold text-slate-500 dark:text-slate-400">카테고리</label>
                     <div className="flex gap-2">
                         <select
                             value={selectedCategoryId}
                             onChange={(e) => setSelectedCategoryId(Number(e.target.value) || "")}
-                            className="flex-1 p-3 bg-slate-50 rounded-xl border-none outline-none text-sm appearance-none"
+                            className="flex-1 p-3 bg-slate-50 dark:bg-slate-800 dark:text-slate-200 rounded-xl border-none outline-none text-sm appearance-none"
                         >
                             <option value="">카테고리 선택</option>
                             {categories.map((cat) => (
@@ -246,7 +246,7 @@ export default function DiaryWrite() {
                             onChange={(e) => setNewCategoryName(e.target.value)}
                             onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddCategory())}
                             placeholder="새 카테고리"
-                            className="flex-1 p-2 bg-slate-50 rounded-xl border-none text-xs outline-none"
+                            className="flex-1 p-2 bg-slate-50 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 rounded-xl border-none text-xs outline-none"
                         />
                         <button type="button" onClick={handleAddCategory} className="px-4 py-2 bg-haru-sky-medium text-haru-sky-deep font-bold rounded-xl text-xs hover:bg-haru-sky-accent transition-colors">추가</button>
                         {selectedCategoryId && (
@@ -258,7 +258,7 @@ export default function DiaryWrite() {
                 {/* 내용 & 마이크 */}
                 <div className="flex flex-col gap-2">
                     <div className="flex justify-between items-center">
-                        <label className="text-sm font-semibold text-slate-500">내용</label>
+                        <label className="text-sm font-semibold text-slate-500 dark:text-slate-400">내용</label>
                         {!speechSupported && (
                             <span className="text-xs text-red-300">음성 인식은 Chrome/Edge에서만 지원됩니다</span>
                         )}
@@ -269,7 +269,7 @@ export default function DiaryWrite() {
                             onChange={(e) => setContent(e.target.value)}
                             placeholder="자유롭게 이야기를 들려주세요..."
                             rows={10}
-                            className="w-full p-4 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-haru-sky-accent outline-none resize-none"
+                            className="w-full p-4 bg-slate-50 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 rounded-2xl border-none focus:ring-2 focus:ring-haru-sky-accent outline-none resize-none"
                         />
 
                         {/* 실시간 인식 중인 텍스트 미리보기 */}

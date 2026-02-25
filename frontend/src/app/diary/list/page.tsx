@@ -95,10 +95,10 @@ export default function DiaryList() {
     const selectedDiaries = selectedDate ? (diaryMap[selectedDate] || []) : [];
 
     return (
-        <div className="flex flex-col p-5 min-h-[100dvh] max-w-md mx-auto bg-slate-50">
+        <div className="flex flex-col p-5 min-h-[100dvh] max-w-md mx-auto bg-slate-50 dark:bg-slate-900 transition-colors">
             <header className="flex items-center gap-4 mb-4">
                 <Link href="/" className="p-2 -ml-2 text-slate-400 hover:text-foreground text-xl">←</Link>
-                <h1 className="text-2xl font-bold flex-1">기록 모아보기</h1>
+                <h1 className="text-2xl font-bold flex-1 dark:text-slate-100">기록 모아보기</h1>
             </header>
 
             {/* 검색 영역 */}
@@ -110,7 +110,7 @@ export default function DiaryList() {
                         onChange={e => setSearchQ(e.target.value)}
                         onKeyDown={e => e.key === "Enter" && handleSearch()}
                         placeholder="🔍 제목 또는 내용 검색..."
-                        className="flex-1 p-3 bg-white rounded-2xl text-sm border border-slate-100 focus:ring-2 focus:ring-haru-sky-accent outline-none"
+                        className="flex-1 p-3 bg-white dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 rounded-2xl text-sm border border-slate-100 dark:border-slate-700 focus:ring-2 focus:ring-haru-sky-accent outline-none"
                     />
                     <button onClick={handleSearch} className="px-4 py-2 bg-haru-sky-medium text-haru-sky-deep font-bold rounded-2xl text-sm hover:bg-haru-sky-accent transition-colors">검색</button>
                 </div>
@@ -118,7 +118,7 @@ export default function DiaryList() {
                     <select
                         value={filterCategoryId}
                         onChange={e => { setFilterCategoryId(Number(e.target.value) || ""); }}
-                        className="flex-1 p-2 bg-white rounded-xl text-xs border border-slate-100 outline-none appearance-none"
+                        className="flex-1 p-2 bg-white dark:bg-slate-800 dark:text-slate-300 rounded-xl text-xs border border-slate-100 dark:border-slate-700 outline-none appearance-none"
                     >
                         <option value="">📁 카테고리 전체</option>
                         {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -144,11 +144,11 @@ export default function DiaryList() {
             ) : (
                 <>
                     {/* 달력 */}
-                    <div className="bg-white rounded-3xl shadow-soft p-5 mb-4">
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-soft p-5 mb-4">
                         <div className="flex items-center justify-between mb-4">
-                            <button onClick={() => setCurrentDate(new Date(year, month - 1, 1))} className="w-9 h-9 rounded-full bg-slate-50 hover:bg-haru-sky-light flex items-center justify-center text-slate-500 transition-colors">‹</button>
-                            <h2 className="text-lg font-bold">{year}년 {month + 1}월</h2>
-                            <button onClick={() => setCurrentDate(new Date(year, month + 1, 1))} className="w-9 h-9 rounded-full bg-slate-50 hover:bg-haru-sky-light flex items-center justify-center text-slate-500 transition-colors">›</button>
+                            <button onClick={() => setCurrentDate(new Date(year, month - 1, 1))} className="w-9 h-9 rounded-full bg-slate-50 dark:bg-slate-700 hover:bg-haru-sky-light flex items-center justify-center text-slate-500 dark:text-slate-300 transition-colors">‹</button>
+                            <h2 className="text-lg font-bold dark:text-slate-100">{year}년 {month + 1}월</h2>
+                            <button onClick={() => setCurrentDate(new Date(year, month + 1, 1))} className="w-9 h-9 rounded-full bg-slate-50 dark:bg-slate-700 hover:bg-haru-sky-light flex items-center justify-center text-slate-500 dark:text-slate-300 transition-colors">›</button>
                         </div>
                         <div className="grid grid-cols-7 mb-2">
                             {WEEKDAYS.map((d, i) => (
@@ -256,7 +256,7 @@ function DiaryCard({ diary, expandedId, setExpandedId, onPin, onRefresh }: {
     // 잠긴 일기는 제목만 표시
     if (isPinLocked && !unlocked) {
         return (
-            <div className="bg-white rounded-3xl shadow-soft p-5 flex items-center gap-3">
+            <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-soft p-5 flex items-center gap-3">
                 <span className="text-2xl">🔒</span>
                 <div className="flex-1">
                     <p className="font-bold text-foreground text-base">{diary.title}</p>
@@ -264,7 +264,7 @@ function DiaryCard({ diary, expandedId, setExpandedId, onPin, onRefresh }: {
                 </div>
                 {showUnlock ? (
                     <div className="flex gap-1">
-                        <input value={pinInput} onChange={e => setPinInput(e.target.value)} type="password" maxLength={8} placeholder="PIN" className="w-20 text-xs p-2 bg-slate-50 rounded-xl outline-none border border-haru-sky-accent" />
+                        <input value={pinInput} onChange={e => setPinInput(e.target.value)} type="password" maxLength={8} placeholder="PIN" className="w-20 text-xs p-2 bg-slate-50 dark:bg-slate-700 dark:text-slate-200 rounded-xl outline-none border border-haru-sky-accent" />
                         <button onClick={handleUnlock} className="text-xs px-2 py-1 bg-haru-sky-medium text-haru-sky-deep font-bold rounded-xl">확인</button>
                     </div>
                 ) : (
@@ -275,8 +275,8 @@ function DiaryCard({ diary, expandedId, setExpandedId, onPin, onRefresh }: {
     }
 
     return (
-        <div className="bg-white rounded-3xl shadow-soft overflow-hidden">
-            <button onClick={() => setExpandedId(isExpanded ? null : diary.id)} className="w-full p-5 text-left flex flex-col gap-2">
+        <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-soft overflow-hidden">
+            <div onClick={() => setExpandedId(isExpanded ? null : diary.id)} className="w-full p-5 text-left flex flex-col gap-2 cursor-pointer select-none">
                 <div className="flex justify-between items-start gap-2">
                     <div className="flex flex-col gap-1 flex-1 min-w-0">
                         <div className="flex items-center gap-2">
@@ -298,20 +298,20 @@ function DiaryCard({ diary, expandedId, setExpandedId, onPin, onRefresh }: {
                 )}
                 <div className="flex gap-2 flex-wrap">
                     {diary.analysis?.emotions && Object.entries(diary.analysis.emotions).map(([em, score]) => (
-                        score > 0.3 && <span key={em} className="text-[10px] bg-slate-100 px-2 py-1 rounded-full text-slate-500">#{em}</span>
+                        score > 0.3 && <span key={em} className="text-[10px] bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded-full text-slate-500 dark:text-slate-400">#{em}</span>
                     ))}
                 </div>
-            </button>
+            </div>
 
             {isExpanded && (
-                <div className="px-5 pb-5 flex flex-col gap-4 border-t border-slate-100">
+                <div className="px-5 pb-5 flex flex-col gap-4 border-t border-slate-100 dark:border-slate-700">
                     {/* 첨부 이미지 */}
                     {diary.image_url && (
                         <img src={`${API}${diary.image_url}`} alt="첨부 이미지" className="w-full rounded-2xl object-cover max-h-48 mt-4" />
                     )}
                     <div className="pt-4">
                         <p className="text-xs font-semibold text-slate-400 mb-2">📝 일기 전문</p>
-                        <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap bg-slate-50 p-4 rounded-2xl">{diary.content}</p>
+                        <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap bg-slate-50 dark:bg-slate-900 p-4 rounded-2xl">{diary.content}</p>
                     </div>
                     {diary.analysis?.positive_points && diary.analysis.positive_points.length > 0 && (
                         <div>
@@ -326,19 +326,19 @@ function DiaryCard({ diary, expandedId, setExpandedId, onPin, onRefresh }: {
                     {diary.analysis?.improvement_points && (
                         <div>
                             <p className="text-xs font-semibold text-slate-400 mb-2">💡 개선 포인트</p>
-                            <p className="text-sm text-slate-500 bg-slate-50 p-3 rounded-xl">{diary.analysis.improvement_points}</p>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900 p-3 rounded-xl">{diary.analysis.improvement_points}</p>
                         </div>
                     )}
 
                     {/* 액션 버튼 */}
-                    <div className="flex gap-2 flex-wrap pt-2 border-t border-slate-50">
+                    <div className="flex gap-2 flex-wrap pt-2 border-t border-slate-100 dark:border-slate-700">
                         <Link href={`/diary/${diary.id}/chat`} className="flex items-center gap-1 text-xs px-3 py-2 bg-haru-sky-medium text-haru-sky-deep font-bold rounded-xl hover:bg-haru-sky-accent transition-colors">
                             🤗 AI 대화
                         </Link>
-                        <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-1 text-xs px-3 py-2 bg-slate-100 text-slate-500 font-bold rounded-xl hover:bg-haru-sky-light transition-colors">
+                        <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-1 text-xs px-3 py-2 bg-slate-100 dark:bg-slate-700 dark:text-slate-300 text-slate-500 font-bold rounded-xl hover:bg-haru-sky-light transition-colors">
                             📷 이미지
                         </button>
-                        <button onClick={handleLock} className="flex items-center gap-1 text-xs px-3 py-2 bg-slate-100 text-slate-500 font-bold rounded-xl hover:bg-red-50 hover:text-red-400 transition-colors">
+                        <button onClick={handleLock} className="flex items-center gap-1 text-xs px-3 py-2 bg-slate-100 dark:bg-slate-700 dark:text-slate-300 text-slate-500 font-bold rounded-xl hover:bg-red-50 hover:text-red-400 transition-colors">
                             🔒 잠금
                         </button>
                         <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
