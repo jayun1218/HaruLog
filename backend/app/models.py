@@ -8,21 +8,35 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True)
-    hashed_password = Column(String)
+    hashed_password = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     diaries = relationship("Diary", back_populates="owner")
+    categories = relationship("Category", back_populates="owner")
+
+class Category(Base):
+    __tablename__ = "categories"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+
+    owner = relationship("User", back_populates="categories")
+    diaries = relationship("Diary", back_populates="category")
 
 class Diary(Base):
     __tablename__ = "diaries"
 
     id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, index=True)
     content = Column(Text)
+    category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
     raw_audio_url = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     user_id = Column(Integer, ForeignKey("users.id"))
 
     owner = relationship("User", back_populates="diaries")
+    category = relationship("Category", back_populates="diaries")
     analysis = relationship("EmotionAnalysis", back_populates="diary", uselist=False)
 
 class EmotionAnalysis(Base):

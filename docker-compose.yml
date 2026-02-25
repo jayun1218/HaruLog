@@ -19,6 +19,12 @@ services:
       - ./backend:/app
     environment:
       - DATABASE_URL=postgresql://user:password@db:5432/mindtrace
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - NEXTAUTH_SECRET=yoursecret
+      - GOOGLE_CLIENT_ID=your_google_id
+      - GOOGLE_CLIENT_SECRET=your_google_secret
+      - NAVER_CLIENT_ID=your_naver_id
+      - NAVER_CLIENT_SECRET=your_naver_secret
     depends_on:
       - db
 

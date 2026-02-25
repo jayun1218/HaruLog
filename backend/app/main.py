@@ -1,6 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api import router as api_router
+from app.database import engine, Base
+import app.models  # 모델을 임포트하여 Base가 모든 테이블을 인식하도록 함
+
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="MindTrace API", version="0.1.0")
 
