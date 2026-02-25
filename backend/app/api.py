@@ -127,12 +127,24 @@ async def speech_to_text(file: UploadFile = File(...)):
 # --- Diary API ---
 @router.post("/diaries", response_model=schemas.Diary)
 def create_diary(diary: schemas.DiaryCreate, db: Session = Depends(get_db), user_id: int = Depends(get_current_user_id)):
+    from datetime import datetime, timezone
+    custom_dt = None
+    if diary.date:
+        try:
+            custom_dt = datetime.strptime(diary.date, "%Y-%m-%d").replace(
+                hour=12, minute=0, second=0, tzinfo=timezone.utc
+            )
+        except ValueError:
+            custom_dt = None
+
     db_diary = models.Diary(
         title=diary.title,
         content=diary.content,
         category_id=diary.category_id,
         user_id=user_id
     )
+    if custom_dt:
+        db_diary.created_at = custom_dt
     db.add(db_diary)
     db.commit()
     db.refresh(db_diary)

@@ -17,6 +17,9 @@ export default function DiaryWrite() {
     const [isRecording, setIsRecording] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [speechSupported, setSpeechSupported] = useState(true);
+    const [selectedDate, setSelectedDate] = useState<string>(
+        new Date().toISOString().slice(0, 10)
+    );
 
     const recognitionRef = useRef<any>(null);
 
@@ -149,7 +152,7 @@ export default function DiaryWrite() {
             const res = await fetch(`${API}/api/diaries`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ title, content, category_id: selectedCategoryId || null })
+                body: JSON.stringify({ title, content, category_id: selectedCategoryId || null, date: selectedDate })
             });
 
             if (res.ok) {
@@ -170,10 +173,24 @@ export default function DiaryWrite() {
         <div className="flex flex-col p-6 min-h-[100dvh] max-w-md mx-auto bg-white">
             <header className="flex items-center gap-4 mb-8">
                 <Link href="/" className="p-2 -ml-2 text-slate-400 hover:text-foreground">✕</Link>
-                <h1 className="text-2xl font-bold">오늘의 일기 쓰기</h1>
+                <div>
+                    <h1 className="text-2xl font-bold">일기 쓰기</h1>
+                </div>
             </header>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+                {/* 날짜 선택 */}
+                <div className="flex flex-col gap-2">
+                    <label className="text-sm font-semibold text-slate-500">날짜</label>
+                    <input
+                        type="date"
+                        value={selectedDate}
+                        onChange={(e) => setSelectedDate(e.target.value)}
+                        max={new Date().toISOString().slice(0, 10)}
+                        className="w-full p-4 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-haru-sky-accent outline-none text-base font-medium text-slate-700"
+                    />
+                </div>
+
                 {/* 제목 */}
                 <div className="flex flex-col gap-2">
                     <label className="text-sm font-semibold text-slate-500">제목</label>

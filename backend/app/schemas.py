@@ -38,7 +38,7 @@ class DiaryBase(BaseModel):
     category_id: Optional[int] = None
 
 class DiaryCreate(DiaryBase):
-    pass
+    date: Optional[str] = None  # YYYY-MM-DD, 없으면 오늘
 
 class Diary(DiaryBase):
     id: int
