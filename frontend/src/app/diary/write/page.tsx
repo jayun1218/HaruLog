@@ -10,16 +10,22 @@ export default function DiaryWrite() {
     const router = useRouter();
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
+    const [interimText, setInterimText] = useState(""); // 실시간 인식 중인 텍스트
     const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
     const [selectedCategoryId, setSelectedCategoryId] = useState<number | "">("");
     const [newCategoryName, setNewCategoryName] = useState("");
     const [isRecording, setIsRecording] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [speechSupported, setSpeechSupported] = useState(true);
 
-    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-    const audioChunksRef = useRef<Blob[]>([]);
+    const recognitionRef = useRef<any>(null);
 
     useEffect(() => {
+        // Web Speech API 지원 여부 확인
+        if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
+            setSpeechSupported(false);
+        }
+
         fetch(`${API}/api/categories`)
             .then(res => res.json())
             .then(data => setCategories(Array.isArray(data) ? data : []))
@@ -44,62 +50,92 @@ export default function DiaryWrite() {
     };
 
     const handleDeleteCategory = async (id: number) => {
-        if (!confirm("이 카테고리를 삭제하시겠습니까?")) return;
+        const target = categories.find(c => c.id === id);
+        const catName = target?.name || "이 카테고리";
+        if (!confirm(`"${catName}" 카테고리를 삭제하시겠습니까?\n\n⚠️ 해당 카테고리의 일기도 모두 함께 삭제됩니다.`)) return;
         try {
-            await fetch(`${API}/api/categories/${id}`, { method: "DELETE" });
+            const res = await fetch(`${API}/api/categories/${id}`, { method: "DELETE" });
+            const data = await res.json();
             setCategories(categories.filter(c => c.id !== id));
             if (selectedCategoryId === id) setSelectedCategoryId("");
+            if (data.deleted_diaries > 0) {
+                alert(`"${catName}" 카테고리와 일기 ${data.deleted_diaries}개가 삭제되었습니다.`);
+            }
         } catch {
             alert("카테고리 삭제에 실패했습니다.");
         }
     };
 
-    const startRecording = async () => {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const mediaRecorder = new MediaRecorder(stream);
-            mediaRecorderRef.current = mediaRecorder;
-            audioChunksRef.current = [];
+    const startRecording = () => {
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
-            mediaRecorder.ondataavailable = (event) => {
-                audioChunksRef.current.push(event.data);
-            };
-
-            mediaRecorder.onstop = async () => {
-                const audioBlob = new Blob(audioChunksRef.current, { type: "audio/wav" });
-                await sendAudioToSTT(audioBlob);
-            };
-
-            mediaRecorder.start();
-            setIsRecording(true);
-        } catch {
-            alert("마이크 접근 권한이 필요합니다. 브라우저 주소창의 자물쇠 아이콘을 눌러 권한을 허용해주세요.");
+        if (!SpeechRecognition) {
+            alert("이 브라우저는 음성 인식을 지원하지 않습니다. Chrome 또는 Edge를 사용해 주세요.");
+            return;
         }
+
+        const recognition = new SpeechRecognition();
+        recognition.lang = "ko-KR";
+        recognition.interimResults = true; // 실시간 중간 결과 표시
+        recognition.continuous = true;     // 계속 듣기
+
+        let finalTranscript = "";
+
+        recognition.onresult = (event: any) => {
+            let interim = "";
+
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const transcript = event.results[i][0].transcript;
+                if (event.results[i].isFinal) {
+                    finalTranscript += transcript;
+                } else {
+                    interim += transcript;
+                }
+            }
+
+            // 확정된 텍스트는 content에 추가, 인식 중인 텍스트는 별도 표시
+            if (finalTranscript) {
+                setContent(prev => {
+                    const base = prev.trimEnd();
+                    return base ? `${base} ${finalTranscript}` : finalTranscript;
+                });
+                finalTranscript = "";
+            }
+            setInterimText(interim);
+        };
+
+        recognition.onerror = (event: any) => {
+            // no-speech: 조용해서 말 안 할 때 정상 발생, 무시하고 기다림
+            // aborted: 개발자가 직접 stop() 호출 시 발생, 정상
+            if (event.error === "no-speech" || event.error === "aborted") return;
+            console.error("Speech recognition error:", event.error);
+            setIsRecording(false);
+            setInterimText("");
+        };
+
+        recognition.onend = () => {
+            // 사용자가 멈치 않았고 세션이 끊기면 (예: no-speech timeout) 자동 재시작
+            if (recognitionRef.current) {
+                try {
+                    recognitionRef.current.start();
+                } catch {
+                    // 이미 실행 중이면 무시
+                }
+            }
+        };
+
+        recognitionRef.current = recognition;
+        recognition.start();
+        setIsRecording(true);
     };
 
     const stopRecording = () => {
-        if (mediaRecorderRef.current && isRecording) {
-            mediaRecorderRef.current.stop();
-            setIsRecording(false);
+        if (recognitionRef.current) {
+            recognitionRef.current.stop();
+            recognitionRef.current = null;
         }
-    };
-
-    const sendAudioToSTT = async (blob: Blob) => {
-        const formData = new FormData();
-        formData.append("file", blob, "recording.wav");
-        try {
-            const res = await fetch(`${API}/api/stt`, { method: "POST", body: formData });
-            const data = await res.json();
-            if (!res.ok) {
-                alert(`음성 인식 실패: ${data.detail || '서버 오류'}`);
-                return;
-            }
-            if (data.text) {
-                setContent(prev => prev ? `${prev} ${data.text}` : data.text);
-            }
-        } catch {
-            alert("음성 인식에 실패했습니다.");
-        }
+        setIsRecording(false);
+        setInterimText("");
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -117,7 +153,7 @@ export default function DiaryWrite() {
             });
 
             if (res.ok) {
-                alert("일기가 저장되었습니다! ☁️");
+                alert("일기가 저장되었습니다! ☁️ AI 분석이 시작됩니다.");
                 router.push("/");
             } else {
                 const err = await res.json();
@@ -138,6 +174,7 @@ export default function DiaryWrite() {
             </header>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+                {/* 제목 */}
                 <div className="flex flex-col gap-2">
                     <label className="text-sm font-semibold text-slate-500">제목</label>
                     <input
@@ -149,6 +186,7 @@ export default function DiaryWrite() {
                     />
                 </div>
 
+                {/* 카테고리 */}
                 <div className="flex flex-col gap-2">
                     <label className="text-sm font-semibold text-slate-500">카테고리</label>
                     <div className="flex gap-2">
@@ -163,7 +201,6 @@ export default function DiaryWrite() {
                             ))}
                         </select>
                     </div>
-
                     <div className="flex gap-2 mt-1">
                         <input
                             type="text"
@@ -180,31 +217,58 @@ export default function DiaryWrite() {
                     </div>
                 </div>
 
-                <div className="flex flex-col gap-2 relative">
-                    <label className="text-sm font-semibold text-slate-500">내용</label>
-                    <textarea
-                        value={content}
-                        onChange={(e) => setContent(e.target.value)}
-                        placeholder="자유롭게 이야기를 들려주세요..."
-                        rows={10}
-                        className="w-full p-4 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-haru-sky-accent outline-none resize-none"
-                    />
-                    <button
-                        type="button"
-                        onClick={isRecording ? stopRecording : startRecording}
-                        className={`absolute bottom-4 right-4 w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all ${isRecording ? "bg-red-500 animate-pulse scale-110" : "bg-haru-sky-deep hover:bg-haru-sky-accent"
-                            } text-white text-2xl`}
-                    >
-                        {isRecording ? "⏹️" : "🎤"}
-                    </button>
+                {/* 내용 & 마이크 */}
+                <div className="flex flex-col gap-2">
+                    <div className="flex justify-between items-center">
+                        <label className="text-sm font-semibold text-slate-500">내용</label>
+                        {!speechSupported && (
+                            <span className="text-xs text-red-300">음성 인식은 Chrome/Edge에서만 지원됩니다</span>
+                        )}
+                    </div>
+                    <div className="relative">
+                        <textarea
+                            value={content}
+                            onChange={(e) => setContent(e.target.value)}
+                            placeholder="자유롭게 이야기를 들려주세요..."
+                            rows={10}
+                            className="w-full p-4 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-haru-sky-accent outline-none resize-none"
+                        />
+
+                        {/* 실시간 인식 중인 텍스트 미리보기 */}
+                        {interimText && (
+                            <div className="absolute bottom-20 left-4 right-16 text-sm text-slate-400 italic bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-xl border border-haru-sky-accent/30">
+                                {interimText}...
+                            </div>
+                        )}
+
+                        <button
+                            type="button"
+                            onClick={isRecording ? stopRecording : startRecording}
+                            disabled={!speechSupported}
+                            className={`absolute bottom-4 right-4 w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all ${isRecording
+                                ? "bg-red-500 animate-pulse scale-110"
+                                : "bg-haru-sky-deep hover:bg-haru-sky-accent"
+                                } text-white text-2xl disabled:opacity-40`}
+                        >
+                            {isRecording ? "⏹️" : "🎤"}
+                        </button>
+                    </div>
+
+                    {isRecording && (
+                        <div className="flex items-center gap-2 text-xs text-red-400 font-medium animate-pulse">
+                            <span className="w-2 h-2 bg-red-400 rounded-full inline-block"></span>
+                            말씀하세요... 버튼을 다시 누르면 종료됩니다
+                        </div>
+                    )}
                 </div>
 
+                {/* 제출 버튼 */}
                 <button
                     type="submit"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isRecording}
                     className="mt-4 w-full p-5 bg-haru-sky-accent text-foreground font-bold rounded-2xl shadow-soft hover:shadow-lg active:scale-[0.98] transition-all disabled:opacity-50"
                 >
-                    {isSubmitting ? "저장 중..." : "일기 작성 완료 ✨"}
+                    {isSubmitting ? "저장 중..." : isRecording ? "녹음을 먼저 종료해주세요" : "일기 작성 완료 ✨"}
                 </button>
             </form>
 

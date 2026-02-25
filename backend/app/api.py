@@ -80,9 +80,23 @@ def delete_category(category_id: int, db: Session = Depends(get_db), user_id: in
     ).first()
     if not db_category:
         raise HTTPException(status_code=404, detail="Category not found")
+    
+    # 이 카테고리에 속한 일기들 조회
+    diaries = db.query(models.Diary).filter(
+        models.Diary.category_id == category_id,
+        models.Diary.user_id == user_id
+    ).all()
+    
+    # 일기별로 감정 분석 결과 먼저 삭제 (외래키 제약 조건)
+    for diary in diaries:
+        db.query(models.EmotionAnalysis).filter(
+            models.EmotionAnalysis.diary_id == diary.id
+        ).delete()
+        db.delete(diary)
+    
     db.delete(db_category)
     db.commit()
-    return {"message": "Category deleted"}
+    return {"message": "Category and related diaries deleted", "deleted_diaries": len(diaries)}
 
 # --- STT API ---
 @router.post("/stt", response_model=schemas.STTResponse)
