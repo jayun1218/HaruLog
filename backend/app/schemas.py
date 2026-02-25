@@ -46,6 +46,7 @@ class Diary(DiaryBase):
     created_at: datetime
     raw_audio_url: Optional[str] = None
     analysis: Optional[EmotionAnalysis] = None
+    category: Optional[Category] = None
 
     class Config:
         from_attributes = True
