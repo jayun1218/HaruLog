@@ -1,0 +1,45 @@
+# OS / IDE
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/.env*
+frontend/next-env.d.ts
+frontend/*.tsbuildinfo
+
+# Python
+backend/__pycache__/
+backend/*.py[cod]
+backend/*$py.class
+backend/.venv/
+backend/env/
+backend/venv/
+backend/ENV/
+backend/.pytest_cache/
+backend/.coverage
+backend/htmlcov/
+backend/.mypy_cache/
+
+# Docker
+.docker/
+docker-compose.override.yml
+
+# Environment & Data
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+data/
+db.sqlite3
+storage/
