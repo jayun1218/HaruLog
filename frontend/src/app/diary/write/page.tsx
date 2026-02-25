@@ -20,6 +20,7 @@ export default function DiaryWrite() {
     const [selectedDate, setSelectedDate] = useState<string>(
         new Date().toISOString().slice(0, 10)
     );
+    const [selectedMood, setSelectedMood] = useState<string>("");
 
     const recognitionRef = useRef<any>(null);
 
@@ -152,7 +153,7 @@ export default function DiaryWrite() {
             const res = await fetch(`${API}/api/diaries`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ title, content, category_id: selectedCategoryId || null, date: selectedDate })
+                body: JSON.stringify({ title, content, category_id: selectedCategoryId || null, date: selectedDate, mood: selectedMood || null })
             });
 
             if (res.ok) {
@@ -189,6 +190,26 @@ export default function DiaryWrite() {
                         max={new Date().toISOString().slice(0, 10)}
                         className="w-full p-4 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-haru-sky-accent outline-none text-base font-medium text-slate-700"
                     />
+                </div>
+
+                {/* 기분 태그 */}
+                <div className="flex flex-col gap-2">
+                    <label className="text-sm font-semibold text-slate-500">오늘 기분은요?</label>
+                    <div className="flex gap-2 flex-wrap">
+                        {["😊", "😄", "😌", "🥰", "😢", "😰", "😤", "😴", "🤔", "😶"].map(emoji => (
+                            <button
+                                key={emoji}
+                                type="button"
+                                onClick={() => setSelectedMood(selectedMood === emoji ? "" : emoji)}
+                                className={`w-12 h-12 text-2xl rounded-2xl transition-all ${selectedMood === emoji
+                                        ? "bg-haru-sky-accent scale-110 shadow-soft"
+                                        : "bg-slate-50 hover:bg-haru-sky-light"
+                                    }`}
+                            >
+                                {emoji}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 {/* 제목 */}

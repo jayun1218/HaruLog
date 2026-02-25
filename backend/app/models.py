@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -32,6 +32,11 @@ class Diary(Base):
     content = Column(Text)
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
     raw_audio_url = Column(String, nullable=True)
+    mood = Column(String, nullable=True)      # 사용자 선택 기분 이모지 (ex: "😊")
+    is_pinned = Column(Boolean, default=False)  # 즐겨찾기
+    image_url = Column(String, nullable=True)    # 첨부 이미지
+    is_locked = Column(Boolean, default=False)   # 잠금 여부
+    pin_hash = Column(String, nullable=True)     # 잠금 PIN 해시
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     user_id = Column(Integer, ForeignKey("users.id"))
 

@@ -141,6 +141,7 @@ def create_diary(diary: schemas.DiaryCreate, db: Session = Depends(get_db), user
         title=diary.title,
         content=diary.content,
         category_id=diary.category_id,
+        mood=diary.mood,
         user_id=user_id
     )
     if custom_dt:
@@ -177,8 +178,33 @@ def create_diary(diary: schemas.DiaryCreate, db: Session = Depends(get_db), user
     return db_diary
 
 @router.get("/diaries", response_model=List[schemas.Diary])
-def get_diaries(db: Session = Depends(get_db), user_id: int = Depends(get_current_user_id)):
-    return db.query(models.Diary).filter(models.Diary.user_id == user_id).order_by(models.Diary.created_at.desc()).all()
+def get_diaries(
+    q: Optional[str] = None,
+    category_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id)
+):
+    query = db.query(models.Diary).filter(models.Diary.user_id == user_id)
+    if q:
+        query = query.filter(
+            models.Diary.title.ilike(f"%{q}%") | models.Diary.content.ilike(f"%{q}%")
+        )
+    if category_id:
+        query = query.filter(models.Diary.category_id == category_id)
+    return query.order_by(models.Diary.is_pinned.desc(), models.Diary.created_at.desc()).all()
+
+@router.patch("/diaries/{diary_id}/pin")
+def toggle_pin(diary_id: int, db: Session = Depends(get_db), user_id: int = Depends(get_current_user_id)):
+    diary = db.query(models.Diary).filter(
+        models.Diary.id == diary_id,
+        models.Diary.user_id == user_id
+    ).first()
+    if not diary:
+        raise HTTPException(status_code=404, detail="Diary not found")
+    diary.is_pinned = not diary.is_pinned
+    db.commit()
+    db.refresh(diary)
+    return {"is_pinned": diary.is_pinned}
 
 @router.get("/statistics")
 def get_statistics(db: Session = Depends(get_db), user_id: int = Depends(get_current_user_id)):
@@ -198,3 +224,104 @@ def get_statistics(db: Session = Depends(get_db), user_id: int = Depends(get_cur
         "total_count": total_count,
         "recent_positive_points": [a.positive_points for a in analyses[-3:] if a.positive_points]
     }
+
+# --- 이미지 업로드 ---
+@router.post("/upload")
+async def upload_image(file: UploadFile = File(...), diary_id: int = None, db: Session = Depends(get_db), user_id: int = Depends(get_current_user_id)):
+    import shutil, uuid
+    upload_dir = "/app/uploads"
+    os.makedirs(upload_dir, exist_ok=True)
+    ext = file.filename.rsplit(".", 1)[-1] if "." in file.filename else "jpg"
+    filename = f"{uuid.uuid4()}.{ext}"
+    filepath = f"{upload_dir}/{filename}"
+    with open(filepath, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+    image_url = f"/uploads/{filename}"
+
+    if diary_id:
+        diary = db.query(models.Diary).filter(models.Diary.id == diary_id, models.Diary.user_id == user_id).first()
+        if diary:
+            diary.image_url = image_url
+            db.commit()
+    return {"image_url": image_url}
+
+# --- AI 대화형 일기 ---
+class ChatMessage(schemas.BaseModel):
+    messages: List[dict]
+
+@router.post("/diaries/{diary_id}/chat")
+def diary_chat(diary_id: int, body: ChatMessage, db: Session = Depends(get_db), user_id: int = Depends(get_current_user_id)):
+    diary = db.query(models.Diary).filter(models.Diary.id == diary_id, models.Diary.user_id == user_id).first()
+    if not diary:
+        raise HTTPException(status_code=404, detail="Diary not found")
+    current_client = get_openai_client()
+    if not current_client:
+        return {"reply": "OpenAI API 키가 필요해요. 잠시 후 다시 시도해주세요."}
+    try:
+        system_msg = {"role": "system", "content": f"너는 사용자의 일기를 읽고 공감하며 대화하는 따뜻한 AI 카운슬러야. 반드시 한국어로만 답해. 일기 내용:\n제목: {diary.title}\n내용: {diary.content}"}
+        response = current_client.chat.completions.create(
+            model="gpt-4o",
+            messages=[system_msg] + body.messages,
+            max_tokens=300
+        )
+        return {"reply": response.choices[0].message.content}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# --- 월간 AI 리포트 ---
+@router.get("/report/monthly")
+def monthly_report(year: int, month: int, db: Session = Depends(get_db), user_id: int = Depends(get_current_user_id)):
+    from datetime import date
+    start = f"{year}-{str(month).zfill(2)}-01"
+    end_day = (date(year, month % 12 + 1, 1) if month < 12 else date(year + 1, 1, 1)).isoformat()
+    diaries = db.query(models.Diary).filter(
+        models.Diary.user_id == user_id,
+        models.Diary.created_at >= start,
+        models.Diary.created_at < end_day
+    ).all()
+    if not diaries:
+        return {"report": "이번 달 일기가 없어요. 소중한 하루하루를 기록해보세요!"}
+    current_client = get_openai_client()
+    if not current_client:
+        return {"report": f"이번 달 {len(diaries)}개의 일기를 작성하셨어요. OpenAI API 연동 시 상세 리포트를 제공해드릴게요."}
+    diary_summary = "\n\n".join([f"[{d.created_at.strftime('%m/%d')}] {d.title}: {d.content[:100]}" for d in diaries])
+    try:
+        response = current_client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": "너는 사용자의 한 달 일기를 분석하는 AI 카운슬러야. 반드시 한국어로만 답해. 이번 달의 감정 흐름, 주요 사건, 칭찬할 점, 내달의 제안을 따뜻하게 요약해줘. 400자 이내로."},
+                {"role": "user", "content": f"{year}년 {month}월 일기:\n{diary_summary}"}
+            ],
+            max_tokens=500
+        )
+        return {"report": response.choices[0].message.content, "diary_count": len(diaries)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# --- 일기 잠금 / 해제 ---
+class LockRequest(schemas.BaseModel):
+    pin: str
+
+@router.post("/diaries/{diary_id}/lock")
+def lock_diary(diary_id: int, body: LockRequest, db: Session = Depends(get_db), user_id: int = Depends(get_current_user_id)):
+    import hashlib
+    diary = db.query(models.Diary).filter(models.Diary.id == diary_id, models.Diary.user_id == user_id).first()
+    if not diary:
+        raise HTTPException(status_code=404, detail="Diary not found")
+    diary.is_locked = True
+    diary.pin_hash = hashlib.sha256(body.pin.encode()).hexdigest()
+    db.commit()
+    return {"is_locked": True}
+
+@router.post("/diaries/{diary_id}/unlock")
+def unlock_diary(diary_id: int, body: LockRequest, db: Session = Depends(get_db), user_id: int = Depends(get_current_user_id)):
+    import hashlib
+    diary = db.query(models.Diary).filter(models.Diary.id == diary_id, models.Diary.user_id == user_id).first()
+    if not diary:
+        raise HTTPException(status_code=404, detail="Diary not found")
+    if diary.pin_hash != hashlib.sha256(body.pin.encode()).hexdigest():
+        raise HTTPException(status_code=403, detail="PIN이 올바르지 않습니다")
+    diary.is_locked = False
+    diary.pin_hash = None
+    db.commit()
+    return {"is_locked": False}

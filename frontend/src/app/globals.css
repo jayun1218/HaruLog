@@ -3,15 +3,26 @@
 :root {
   --background: #ffffff;
   --foreground: #37474f;
-  
+
   /* HaruLog Theme Colors */
   --haru-sky-light: #f0f9ff;
   --haru-sky-medium: #e0f2fe;
   --haru-sky-accent: #bae6fd;
   --haru-sky-deep: #7dd3fc;
-  
+
   --card-radius: 2rem;
   --soft-shadow: 0 10px 25px -5px rgba(186, 230, 253, 0.3);
+}
+
+/* 다크 모드 */
+.dark {
+  --background: #0f172a;
+  --foreground: #e2e8f0;
+  --haru-sky-light: #1e293b;
+  --haru-sky-medium: #1e3a4a;
+  --haru-sky-accent: #38bdf8;
+  --haru-sky-deep: #7dd3fc;
+  --soft-shadow: 0 10px 25px -5px rgba(56, 189, 248, 0.15);
 }
 
 @theme inline {
@@ -26,13 +37,18 @@
 }
 
 body {
-  background: linear-gradient(135deg, white 0%, var(--haru-sky-light) 100%);
+  background: var(--background);
   color: var(--foreground);
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
   min-height: 100vh;
   margin: 0;
   display: flex;
   flex-direction: column;
+  transition: background 0.3s, color 0.3s;
+}
+
+.dark body {
+  background: linear-gradient(135deg, #0f172a 0%, #1e2d40 100%);
 }
 
 /* 몽글몽글한 느낌을 주기 위한 유틸리티 */
@@ -41,6 +57,5 @@ body {
 }
 
 .fluffy-card {
-  @apply bg-white rounded-haru shadow-soft p-6 border border-haru-sky-light;
+  @apply bg-white dark:bg-slate-800 rounded-haru shadow-soft p-6 border border-haru-sky-light;
 }
-

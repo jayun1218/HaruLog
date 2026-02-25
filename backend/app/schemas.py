@@ -36,15 +36,19 @@ class DiaryBase(BaseModel):
     title: str
     content: str
     category_id: Optional[int] = None
+    mood: Optional[str] = None          # 전송할 이모지 기분 태그
 
 class DiaryCreate(DiaryBase):
-    date: Optional[str] = None  # YYYY-MM-DD, 없으면 오늘
+    date: Optional[str] = None
 
 class Diary(DiaryBase):
     id: int
     user_id: int
     created_at: datetime
     raw_audio_url: Optional[str] = None
+    image_url: Optional[str] = None
+    is_pinned: bool = False
+    is_locked: bool = False
     analysis: Optional[EmotionAnalysis] = None
     category: Optional[Category] = None
 
