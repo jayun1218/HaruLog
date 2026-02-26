@@ -124,11 +124,11 @@ export default function Home() {
           </div>
         </Link>
 
-        <Link href="/report" className="fluffy-card flex items-center gap-4 group hover:shadow-lg hover:-translate-y-1 opacity-60">
-          <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center text-2xl">💌</div>
+        <Link href="/report" className="fluffy-card flex items-center gap-4 group hover:shadow-lg hover:-translate-y-1">
+          <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center text-2xl group-hover:rotate-12 transition-transform">💌</div>
           <div className="flex-1">
             <h2 className="font-bold text-base text-foreground">AI 리포트</h2>
-            <p className="text-xs text-slate-400">한 달의 마음 요약 (준비 중)</p>
+            <p className="text-xs text-slate-400">한 달의 마음 요약</p>
           </div>
         </Link>
 

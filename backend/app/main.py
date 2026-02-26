@@ -20,8 +20,8 @@ def run_migrations():
         "ALTER TABLE diaries ADD COLUMN IF NOT EXISTS image_url VARCHAR",
         "ALTER TABLE diaries ADD COLUMN IF NOT EXISTS is_locked BOOLEAN DEFAULT FALSE",
         "ALTER TABLE diaries ADD COLUMN IF NOT EXISTS pin_hash VARCHAR",
-        "ALTER TABLE emotion_analysis ADD COLUMN IF NOT EXISTS keywords JSON",
-        "ALTER TABLE emotion_analysis ADD COLUMN IF NOT EXISTS card_message TEXT",
+        "ALTER TABLE emotion_analyses ADD COLUMN IF NOT EXISTS keywords JSON",
+        "ALTER TABLE emotion_analyses ADD COLUMN IF NOT EXISTS card_message TEXT",
     ]
     with engine.connect() as conn:
         for sql in migrations:

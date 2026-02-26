@@ -1,10 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Header
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 import os
 import json
 from openai import OpenAI
 from jose import jwt, JWTError
+from dotenv import load_dotenv
+
+# .env 로드
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env"))
 
 from app.database import get_db
 from app import models, schemas
@@ -187,7 +191,7 @@ def get_diaries(
     db: Session = Depends(get_db),
     user_id: int = Depends(get_current_user_id)
 ):
-    query = db.query(models.Diary).filter(models.Diary.user_id == user_id)
+    query = db.query(models.Diary).options(joinedload(models.Diary.analysis)).filter(models.Diary.user_id == user_id)
     if q:
         query = query.filter(
             models.Diary.title.ilike(f"%{q}%") | models.Diary.content.ilike(f"%{q}%")
@@ -232,13 +236,25 @@ def get_statistics(db: Session = Depends(get_db), user_id: int = Depends(get_cur
 @router.post("/upload")
 async def upload_image(file: UploadFile = File(...), diary_id: int = None, db: Session = Depends(get_db), user_id: int = Depends(get_current_user_id)):
     import shutil, uuid
-    upload_dir = "/app/uploads"
-    os.makedirs(upload_dir, exist_ok=True)
+    # Mac/Local 로컬 개발 환경용 업로드 경로 설정
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    upload_dir = os.path.join(base_dir, "uploads")
+    
+    try:
+        os.makedirs(upload_dir, exist_ok=True)
+    except Exception as e:
+        print(f"Directory creation error: {e}")
+        # 권한 문제 대비 대체 경로 (현재 작업 디렉토리 하위)
+        upload_dir = os.path.join(os.getcwd(), "uploads")
+        os.makedirs(upload_dir, exist_ok=True)
+
     ext = file.filename.rsplit(".", 1)[-1] if "." in file.filename else "jpg"
     filename = f"{uuid.uuid4()}.{ext}"
-    filepath = f"{upload_dir}/{filename}"
+    filepath = os.path.join(upload_dir, filename)
+    
     with open(filepath, "wb") as f:
         shutil.copyfileobj(file.file, f)
+    
     image_url = f"/uploads/{filename}"
 
     if diary_id:
