@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { toast } from "@/components/Toast";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -38,6 +40,7 @@ function getTopEmotionEmoji(emotions?: Record<string, number>): string {
 }
 
 export default function DiaryList() {
+    const router = useRouter();
     const [diaries, setDiaries] = useState<Diary[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -83,7 +86,12 @@ export default function DiaryList() {
     const month = currentDate.getMonth();
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const todayKey = new Date().toISOString().slice(0, 10);
+
+    const getLocalToday = () => {
+        const now = new Date();
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    };
+    const todayKey = getLocalToday();
 
     const diaryMap: Record<string, Diary[]> = {};
     diaries.forEach(d => {
@@ -166,10 +174,20 @@ export default function DiaryList() {
                                 const d0 = diaryMap[dateKey]?.[0];
                                 const emoji = d0?.mood || (d0?.analysis ? getTopEmotionEmoji(d0.analysis.emotions) : null);
                                 return (
-                                    <button key={day} onClick={() => { setSelectedDate(isSelected ? null : dateKey); setExpandedId(null); }}
-                                        className={`flex flex-col items-center justify-start py-1.5 rounded-2xl transition-all ${isSelected ? "bg-haru-sky-accent scale-105 shadow-soft" : isToday ? "bg-haru-sky-light" : hasDiary ? "hover:bg-haru-sky-light" : "hover:bg-slate-50"}`}>
-                                        <span className={`text-sm font-semibold leading-tight ${isToday ? "text-haru-sky-deep" : "text-slate-700"}`}>{day}</span>
-                                        {emoji ? <span className="text-base leading-none mt-0.5">{emoji}</span> : <span className="h-5 mt-0.5" />}
+                                    <button key={day} onClick={() => {
+                                        if (hasDiary) {
+                                            setSelectedDate(isSelected ? null : dateKey);
+                                            setExpandedId(null);
+                                        } else {
+                                            // 일기 없는 날 클릭 시 해당 날짜로 쓰기 페이지 이동
+                                            router.push(`/diary/write?date=${dateKey}`);
+                                        }
+                                    }}
+                                        className={`flex flex-col items-center justify-start py-1.5 rounded-2xl transition-all ${isSelected ? "bg-haru-sky-accent scale-105 shadow-soft" : isToday ? "bg-haru-sky-light dark:bg-haru-sky-deep/20" : hasDiary ? "hover:bg-haru-sky-light dark:hover:bg-slate-700" : "hover:bg-slate-50 dark:hover:bg-slate-800/50"}`}>
+                                        <span className={`text-sm font-semibold leading-tight ${isToday ? "text-haru-sky-deep dark:text-haru-sky-accent" : "text-slate-700 dark:text-slate-300"}`}>{day}</span>
+                                        {emoji ? <span className="text-base leading-none mt-0.5">{emoji}</span> : (
+                                            <span className="h-5 mt-0.5 text-[10px] text-slate-200 dark:text-slate-700 group-hover:text-haru-sky-accent">+</span>
+                                        )}
                                     </button>
                                 );
                             })}
@@ -239,8 +257,13 @@ function DiaryCard({ diary, expandedId, setExpandedId, onPin, onRefresh }: {
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ pin: pinInput })
         });
-        if (res.ok) { setUnlocked(true); setShowUnlock(false); setPinInput(""); }
-        else alert("PIN이 올바르지 않습니다.");
+        if (res.ok) {
+            setUnlocked(true);
+            setShowUnlock(false);
+            setPinInput("");
+            toast("기록이 열렸어요 🔓", "success");
+        }
+        else toast("PIN이 올바르지 않습니다.", "error");
     };
 
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -249,8 +272,13 @@ function DiaryCard({ diary, expandedId, setExpandedId, onPin, onRefresh }: {
         const form = new FormData();
         form.append("file", file);
         form.append("diary_id", String(diary.id));
-        await fetch(`${API}/api/upload?diary_id=${diary.id}`, { method: "POST", body: form });
-        onRefresh();
+        const res = await fetch(`${API}/api/upload?diary_id=${diary.id}`, { method: "POST", body: form });
+        if (res.ok) {
+            toast("이미지가 성공적으로 첨부되었어요 📷", "success");
+            onRefresh();
+        } else {
+            toast("이미지 업로드에 실패했어요.", "error");
+        }
     };
 
     // 잠긴 일기는 제목만 표시

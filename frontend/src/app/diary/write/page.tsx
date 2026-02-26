@@ -1,13 +1,17 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useRef, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { toast } from "@/components/Toast";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-export default function DiaryWrite() {
+function DiaryWriteInner() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const initialDate = searchParams.get("date");
+
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
     const [interimText, setInterimText] = useState(""); // 실시간 인식 중인 텍스트
@@ -17,8 +21,13 @@ export default function DiaryWrite() {
     const [isRecording, setIsRecording] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [speechSupported, setSpeechSupported] = useState(true);
+    const getLocalToday = () => {
+        const now = new Date();
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    };
+
     const [selectedDate, setSelectedDate] = useState<string>(
-        new Date().toISOString().slice(0, 10)
+        initialDate || getLocalToday()
     );
     const [selectedMood, setSelectedMood] = useState<string>("");
 
@@ -34,7 +43,29 @@ export default function DiaryWrite() {
             .then(res => res.json())
             .then(data => setCategories(Array.isArray(data) ? data : []))
             .catch(err => console.error("카테고리 로드 실패:", err));
+
+        // 임시저장 불러오기
+        const saved = localStorage.getItem("harulog_draft");
+        if (saved) {
+            const { title: t, content: c, mood: m } = JSON.parse(saved);
+            if (t || c || m) {
+                setTitle(t || "");
+                setContent(c || "");
+                setSelectedMood(m || "");
+                toast("이전에 쓰던 내용을 불러왔어요 ✍️", "info");
+            }
+        }
     }, []);
+
+    // 자동 임시저장
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (title || content || selectedMood) {
+                localStorage.setItem("harulog_draft", JSON.stringify({ title, content, mood: selectedMood }));
+            }
+        }, 3000);
+        return () => clearTimeout(timer);
+    }, [title, content, selectedMood]);
 
     const handleAddCategory = async () => {
         if (!newCategoryName.trim()) return;
@@ -46,10 +77,11 @@ export default function DiaryWrite() {
             });
             const data = await res.json();
             setCategories([...categories, data]);
+            toast("카테고리가 추가되었습니다.", "success");
             setNewCategoryName("");
             setSelectedCategoryId(data.id);
         } catch {
-            alert("카테고리 추가에 실패했습니다.");
+            toast("카테고리 추가에 실패했습니다.", "error");
         }
     };
 
@@ -157,14 +189,15 @@ export default function DiaryWrite() {
             });
 
             if (res.ok) {
-                alert("일기가 저장되었습니다! ☁️ AI 분석이 시작됩니다.");
-                router.push("/");
+                localStorage.removeItem("harulog_draft");
+                toast("오늘의 하루가 소중하게 저장되었어요 ✨", "success");
+                router.push("/diary/list");
             } else {
                 const err = await res.json();
                 throw new Error(err.detail || "Failed to save diary");
             }
         } catch (err: any) {
-            alert(`저장에 실패했습니다: ${err.message}`);
+            toast(`저장에 실패했습니다: ${err.message}`, "error");
         } finally {
             setIsSubmitting(false);
         }
@@ -187,7 +220,7 @@ export default function DiaryWrite() {
                         type="date"
                         value={selectedDate}
                         onChange={(e) => setSelectedDate(e.target.value)}
-                        max={new Date().toISOString().slice(0, 10)}
+                        max={getLocalToday()}
                         className="w-full p-4 bg-slate-50 dark:bg-slate-800 dark:text-slate-200 rounded-2xl border-none focus:ring-2 focus:ring-haru-sky-accent outline-none text-base font-medium text-slate-700"
                     />
                 </div>
@@ -256,12 +289,10 @@ export default function DiaryWrite() {
                 </div>
 
                 {/* 내용 & 마이크 */}
-                <div className="flex flex-col gap-2">
-                    <div className="flex justify-between items-center">
+                <div className="flex flex-col gap-2 relative">
+                    <div className="flex justify-between items-center mb-1">
                         <label className="text-sm font-semibold text-slate-500 dark:text-slate-400">내용</label>
-                        {!speechSupported && (
-                            <span className="text-xs text-red-300">음성 인식은 Chrome/Edge에서만 지원됩니다</span>
-                        )}
+                        <span className="text-[10px] text-slate-400 font-mono select-none">{content.length} 자</span>
                     </div>
                     <div className="relative">
                         <textarea
@@ -271,36 +302,32 @@ export default function DiaryWrite() {
                             rows={10}
                             className="w-full p-4 bg-slate-50 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 rounded-2xl border-none focus:ring-2 focus:ring-haru-sky-accent outline-none resize-none"
                         />
-
                         {/* 실시간 인식 중인 텍스트 미리보기 */}
                         {interimText && (
-                            <div className="absolute bottom-20 left-4 right-16 text-sm text-slate-400 italic bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-xl border border-haru-sky-accent/30">
+                            <div className="absolute bottom-4 left-4 right-16 text-sm text-slate-400 italic bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm px-3 py-1.5 rounded-xl border border-haru-sky-accent/30">
                                 {interimText}...
                             </div>
                         )}
-
                         <button
                             type="button"
                             onClick={isRecording ? stopRecording : startRecording}
                             disabled={!speechSupported}
-                            className={`absolute bottom-4 right-4 w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all ${isRecording
+                            className={`absolute bottom-4 right-4 w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all ${isRecording
                                 ? "bg-red-500 animate-pulse scale-110"
                                 : "bg-haru-sky-deep hover:bg-haru-sky-accent"
-                                } text-white text-2xl disabled:opacity-40`}
+                                } text-white text-xl disabled:opacity-40`}
                         >
                             {isRecording ? "⏹️" : "🎤"}
                         </button>
                     </div>
-
                     {isRecording && (
-                        <div className="flex items-center gap-2 text-xs text-red-400 font-medium animate-pulse">
+                        <div className="flex items-center gap-2 text-xs text-red-400 font-medium animate-pulse mt-1">
                             <span className="w-2 h-2 bg-red-400 rounded-full inline-block"></span>
                             말씀하세요... 버튼을 다시 누르면 종료됩니다
                         </div>
                     )}
                 </div>
 
-                {/* 제출 버튼 */}
                 <button
                     type="submit"
                     disabled={isSubmitting || isRecording}
@@ -310,9 +337,17 @@ export default function DiaryWrite() {
                 </button>
             </form>
 
-            <footer className="mt-8 text-center text-slate-300 text-xs">
+            <footer className="mt-8 text-center text-slate-300 text-xs py-8">
                 말로 하셔도 괜찮아요, 제가 다 들어드릴게요.
             </footer>
         </div>
+    );
+}
+
+export default function DiaryWrite() {
+    return (
+        <Suspense fallback={<div className="p-6 text-center text-slate-400">Loading...</div>}>
+            <DiaryWriteInner />
+        </Suspense>
     );
 }

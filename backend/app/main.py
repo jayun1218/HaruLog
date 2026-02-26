@@ -1,8 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from app.api import router as api_router
 from app.database import engine, Base
-import app.models  # 모델을 임포트하여 Base가 모든 테이블을 인식하도록 함
+import app.models
+import os
 
 Base.metadata.create_all(bind=engine)
 
@@ -44,3 +46,7 @@ async def health_check():
     return {"status": "healthy"}
 
 app.include_router(api_router, prefix="/api")
+
+# 업로드 이미지 정적 파일 서빙
+os.makedirs("/app/uploads", exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="/app/uploads"), name="uploads")
