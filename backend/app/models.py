@@ -51,6 +51,8 @@ class EmotionAnalysis(Base):
     diary_id = Column(Integer, ForeignKey("diaries.id"))
     summary = Column(Text)
     emotions = Column(JSON)  # e.g., {"happiness": 0.8, "sadness": 0.1}
+    keywords = Column(JSON, nullable=True)  # 자동 추출된 키워드 리스트
+    card_message = Column(Text, nullable=True)  # AI 생성 응원 메시지
     positive_points = Column(JSON)  # List of 3 good things
     improvement_points = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

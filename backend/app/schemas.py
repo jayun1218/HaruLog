@@ -20,6 +20,8 @@ class Category(CategoryBase):
 class EmotionAnalysisBase(BaseModel):
     summary: str
     emotions: Dict[str, float]
+    keywords: Optional[List[str]] = None
+    card_message: Optional[str] = None
     positive_points: List[str]
     improvement_points: str
 

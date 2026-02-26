@@ -156,7 +156,7 @@ def create_diary(diary: schemas.DiaryCreate, db: Session = Depends(get_db), user
             response = current_client.chat.completions.create(
                 model="gpt-4o",
                 messages=[
-                    {"role": "system", "content": "너는 사용자의 일기를 분석하는 AI 카운슬러야. 반드시 한국어로만 응답해. 일기 내용을 2~3문장으로 요약하고, 감정(기쁨, 슬픔, 불안, 분노, 평온) 점수를 0~1 사이로 매기고, 오늘 잘한 일 3가지를 도출하고, 개선할 점을 제안해줘. 모든 텍스트 필드는 반드시 한국어로 작성해. JSON 형식으로만 응답해. 예시: {\"summary\": \"오늘 하루를 잘 마무리했다...\", \"emotions\": {\"기쁨\": 0.7, \"평온\": 0.5}, \"positive_points\": [\"꾸준히 공부했다\", \"친구에게 먼저 연락했다\", \"건강한 식사를 했다\"], \"improvement_points\": \"더 일찍 자는 습관을 길러보세요.\"}"},
+                    {"role": "system", "content": "너는 사용자의 일기를 분석하는 AI 카운슬러야. 응답 본문은 반드시 한국어로 작성하되, JSON의 키값은 반드시 다음 영문명을 사용해: summary, emotions, keywords, card_message, positive_points (잘한 일 3가지 리스트), improvement_points (개선점 문자열). emotions 객체의 키값은 반드시 [기쁨, 슬픔, 불안, 분노, 평온] 중 하나를 사용해. JSON 형식으로만 응답해."},
                     {"role": "user", "content": f"일기 제목: {diary.title}\n내용: {diary.content}"}
                 ],
                 response_format={ "type": "json_object" }
@@ -167,11 +167,14 @@ def create_diary(diary: schemas.DiaryCreate, db: Session = Depends(get_db), user
                 diary_id=db_diary.id,
                 summary=analysis_data.get("summary", ""),
                 emotions=analysis_data.get("emotions", {}),
+                keywords=analysis_data.get("keywords", []),
+                card_message=analysis_data.get("card_message", ""),
                 positive_points=analysis_data.get("positive_points", []),
                 improvement_points=analysis_data.get("improvement_points", "")
             )
             db.add(db_analysis)
             db.commit()
+            db.refresh(db_diary)  # 분석 결과를 포함하여 다시 읽기
         except Exception as e:
             print(f"AI Analysis failed: {e}")
 

@@ -1,15 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import {
+    LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+    PieChart, Pie, Cell, Legend, AreaChart, Area
+} from "recharts";
+import { ArrowLeft, BarChart3, TrendingUp, Sparkles, Award } from "lucide-react";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 const EMOTION_COLORS: Record<string, string> = {
-    "기쁨": "#7dd3fc", "슬픔": "#93c5fd", "불안": "#fbbf24",
-    "분노": "#f87171", "평온": "#86efac",
-    "joy": "#7dd3fc", "sadness": "#93c5fd", "anxiety": "#fbbf24",
-    "anger": "#f87171", "calm": "#86efac",
+    "기쁨": "#FCD34D", "슬픔": "#60A5FA", "불안": "#F472B6",
+    "분노": "#FB7185", "평온": "#34D399",
+    "joy": "#FCD34D", "sadness": "#60A5FA", "anxiety": "#F472B6",
+    "anger": "#FB7185", "calm": "#34D399",
 };
 
 interface Stats {
@@ -17,53 +22,6 @@ interface Stats {
     total_count: number;
     recent_positive_points: string[][];
     emotion_trend?: { date: string; emotions: Record<string, number> }[];
-}
-
-// 순수 SVG 선 그래프
-function EmotionLineChart({ trend, emotions }: {
-    trend: { date: string; emotions: Record<string, number> }[];
-    emotions: string[];
-}) {
-    if (trend.length < 2) return null;
-    const W = 320, H = 120, PX = 20, PY = 10;
-    const innerW = W - PX * 2, innerH = H - PY * 2;
-    const xStep = innerW / (trend.length - 1);
-
-    const toPath = (emotion: string) => {
-        const pts = trend.map((t, i) => {
-            const v = t.emotions[emotion] ?? 0;
-            const x = PX + i * xStep;
-            const y = PY + innerH - v * innerH;
-            return `${x},${y}`;
-        });
-        return `M ${pts.join(" L ")}`;
-    };
-
-    return (
-        <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: H }}>
-            {/* 가로 격자 */}
-            {[0, 0.5, 1].map(v => (
-                <line key={v} x1={PX} x2={W - PX}
-                    y1={PY + innerH - v * innerH} y2={PY + innerH - v * innerH}
-                    stroke="#e2e8f0" strokeWidth="1" strokeDasharray="4,4" />
-            ))}
-            {/* 선 */}
-            {emotions.slice(0, 3).map(em => (
-                <path key={em} d={toPath(em)} fill="none"
-                    stroke={EMOTION_COLORS[em] || "#7dd3fc"} strokeWidth="2.5"
-                    strokeLinecap="round" strokeLinejoin="round" />
-            ))}
-            {/* X축 날짜 라벨 */}
-            {trend.map((t, i) => (
-                (i === 0 || i === trend.length - 1 || i === Math.floor(trend.length / 2)) && (
-                    <text key={i} x={PX + i * xStep} y={H - 1}
-                        textAnchor="middle" fontSize="8" fill="#94a3b8">
-                        {t.date.slice(5)}
-                    </text>
-                )
-            ))}
-        </svg>
-    );
 }
 
 export default function Statistics() {
@@ -82,108 +40,162 @@ export default function Statistics() {
         }).catch(() => setIsLoading(false));
     }, []);
 
-    // 날짜별 감정 평균 계산
-    const trend = (() => {
+    const trendData = useMemo(() => {
         const map: Record<string, { emotions: Record<string, number[]> }> = {};
-        diaries.forEach(d => {
+        diaries.forEach((d: any) => {
             if (!d.analysis?.emotions) return;
-            const date = d.created_at.slice(0, 10);
+            const date = d.created_at.slice(5, 10); // MM-DD
             if (!map[date]) map[date] = { emotions: {} };
-            Object.entries(d.analysis.emotions).forEach(([em, v]) => {
+            Object.entries(d.analysis.emotions).forEach(([em, v]: [string, any]) => {
                 if (!map[date].emotions[em]) map[date].emotions[em] = [];
                 map[date].emotions[em].push(v);
             });
         });
         return Object.entries(map)
             .sort(([a], [b]) => a.localeCompare(b))
-            .slice(-14)
+            .slice(-7) // 최근 7일
             .map(([date, { emotions }]) => ({
-                date,
-                emotions: Object.fromEntries(
-                    Object.entries(emotions).map(([em, vals]) => [em, vals.reduce((a, b) => a + b, 0) / vals.length])
+                name: date,
+                ...Object.fromEntries(
+                    Object.entries(emotions).map(([em, vals]) => [em, (vals.reduce((a, b) => a + b, 0) / vals.length) * 100])
                 ),
             }));
-    })();
+    }, [diaries]);
 
-    const topEmotions = stats ? Object.keys(stats.emotion_distribution).slice(0, 3) : [];
+    const pieData = useMemo(() => {
+        if (!stats) return [];
+        return Object.entries(stats.emotion_distribution).map(([name, value]) => ({
+            name,
+            value: Math.round(value * 100)
+        })).sort((a, b) => b.value - a.value);
+    }, [stats]);
 
     return (
-        <div className="flex flex-col p-6 min-h-[100dvh] max-w-md mx-auto bg-background transition-colors">
+        <div className="flex flex-col p-6 min-h-[100dvh] max-w-md mx-auto bg-slate-50 dark:bg-slate-950 transition-colors pb-12">
             <header className="flex items-center gap-4 mb-8">
-                <Link href="/" className="p-2 -ml-2 text-slate-400 hover:text-foreground text-xl">←</Link>
-                <h1 className="text-2xl font-bold text-foreground">내 마음 통계</h1>
+                <Link href="/" className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 shadow-soft flex items-center justify-center text-slate-400 hover:text-foreground transition-all">
+                    <ArrowLeft size={20} />
+                </Link>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">내 마음 통계</h1>
             </header>
 
             {isLoading ? (
-                <div className="flex-1 flex items-center justify-center text-slate-400">데이터를 분석하고 있어요... 📊</div>
+                <div className="flex-1 flex flex-col items-center justify-center gap-4">
+                    <div className="w-12 h-12 border-4 border-haru-sky-accent border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-slate-400 font-medium animate-pulse">데이터를 분석하고 있어요... 📊</p>
+                </div>
             ) : !stats || stats.total_count === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center">
-                    <span className="text-6xl opacity-20">📊</span>
-                    <p className="text-slate-500 font-medium">아직 분석할 데이터가 부족해요.<br />일기를 더 써주시면 통계를 보여드릴게요!</p>
+                <div className="flex-1 flex flex-col items-center justify-center gap-6 text-center">
+                    <div className="w-32 h-32 bg-slate-100 dark:bg-slate-900 rounded-[3rem] flex items-center justify-center text-6xl shadow-inner">📊</div>
+                    <div>
+                        <p className="text-slate-500 dark:text-slate-400 font-bold text-lg mb-1">아직 분석할 데이터가 부족해요</p>
+                        <p className="text-slate-400 text-sm">일기를 더 써주시면 멋진 통계를 보여드릴게요!</p>
+                    </div>
                 </div>
             ) : (
-                <div className="flex flex-col gap-8">
-                    {/* 감정 흐름 그래프 */}
-                    {trend.length >= 2 && (
-                        <section className="flex flex-col gap-3">
-                            <h2 className="text-lg font-bold text-slate-700 dark:text-slate-200">감정 흐름 그래프 📈</h2>
-                            <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-3xl">
-                                <EmotionLineChart trend={trend} emotions={topEmotions} />
-                                {/* 범례 */}
-                                <div className="flex gap-3 flex-wrap mt-2 justify-center">
-                                    {topEmotions.map(em => (
-                                        <div key={em} className="flex items-center gap-1 text-xs text-slate-500">
-                                            <span className="w-3 h-3 rounded-full inline-block" style={{ background: EMOTION_COLORS[em] || "#7dd3fc" }} />
-                                            {em}
-                                        </div>
+                <div className="flex flex-col gap-6">
+                    {/* 감정 흐름 차트 */}
+                    <div className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] shadow-soft border border-slate-100 dark:border-slate-800">
+                        <div className="flex items-center gap-2 mb-6">
+                            <div className="w-8 h-8 bg-blue-50 dark:bg-blue-900/30 rounded-lg flex items-center justify-center text-blue-500">
+                                <TrendingUp size={18} />
+                            </div>
+                            <h2 className="font-bold text-slate-800 dark:text-slate-100">최근 감정 변화</h2>
+                        </div>
+                        <div className="h-48 w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={trendData}>
+                                    <defs>
+                                        {Object.keys(EMOTION_COLORS).map(em => (
+                                            <linearGradient key={em} id={`color${em}`} x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor={EMOTION_COLORS[em]} stopOpacity={0.3} />
+                                                <stop offset="95%" stopColor={EMOTION_COLORS[em]} stopOpacity={0} />
+                                            </linearGradient>
+                                        ))}
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#88888822" />
+                                    <XAxis dataKey="name" fontSize={10} axisLine={false} tickLine={false} tick={{ fill: '#888' }} />
+                                    <Tooltip
+                                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+                                    />
+                                    {Object.keys(EMOTION_COLORS).slice(0, 5).map(em => (
+                                        <Area key={em} type="monotone" dataKey={em} stroke={EMOTION_COLORS[em]} fillOpacity={1} fill={`url(#color${em})`} strokeWidth={3} />
                                     ))}
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        {/* 감정 분포 파이 차트 */}
+                        <div className="bg-white dark:bg-slate-900 p-5 rounded-[2.5rem] shadow-soft border border-slate-100 dark:border-slate-800 col-span-2">
+                            <div className="flex items-center gap-2 mb-4">
+                                <div className="w-8 h-8 bg-amber-50 dark:bg-amber-900/30 rounded-lg flex items-center justify-center text-amber-500">
+                                    <BarChart3 size={18} />
+                                </div>
+                                <h2 className="font-bold text-slate-800 dark:text-slate-100">이달의 마음 컬러</h2>
+                            </div>
+                            <div className="h-56 w-full flex items-center justify-center relative">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            data={pieData}
+                                            innerRadius={60}
+                                            outerRadius={80}
+                                            paddingAngle={8}
+                                            dataKey="value"
+                                        >
+                                            {pieData.map((entry: any, index: number) => (
+                                                <Cell key={`cell-${index}`} fill={EMOTION_COLORS[entry.name] || '#eee'} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip />
+                                        <Legend verticalAlign="bottom" height={36} />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                                <div className="absolute text-center pointer-events-none">
+                                    <p className="text-[10px] text-slate-400 font-medium">가장 많은</p>
+                                    <p className="font-bold text-slate-800 dark:text-slate-100 text-lg">{pieData[0]?.name}</p>
                                 </div>
                             </div>
-                        </section>
-                    )}
+                        </div>
+                    </div>
 
-                    {/* 이번 달 감정 분포 */}
-                    <section className="flex flex-col gap-4">
-                        <h2 className="text-lg font-bold text-slate-700 dark:text-slate-200">이번 달 내 마음의 색깔 🎨</h2>
-                        <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-3xl flex flex-col gap-4">
-                            {Object.entries(stats.emotion_distribution).map(([emotion, score]) => (
-                                <div key={emotion} className="flex flex-col gap-1">
-                                    <div className="flex justify-between text-xs font-bold text-slate-500 dark:text-slate-400">
-                                        <span>{emotion}</span>
-                                        <span>{Math.round(score * 100)}%</span>
-                                    </div>
-                                    <div className="w-full h-3 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                                        <div className="h-full rounded-full transition-all duration-1000"
-                                            style={{ width: `${score * 100}%`, background: EMOTION_COLORS[emotion] || "#7dd3fc" }} />
-                                    </div>
+                    {/* 잘한 일 칭찬 */}
+                    <div className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] shadow-soft border border-slate-100 dark:border-slate-800">
+                        <div className="flex items-center gap-2 mb-4">
+                            <div className="w-8 h-8 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center text-emerald-500">
+                                <Award size={18} />
+                            </div>
+                            <h2 className="font-bold text-slate-800 dark:text-slate-100">스스로 칭찬해! ✨</h2>
+                        </div>
+                        <div className="flex flex-col gap-3">
+                            {stats.recent_positive_points.flat().slice(0, 3).map((point: string, i: number) => (
+                                <div key={i} className="flex items-start gap-3 p-4 bg-emerald-50/50 dark:bg-emerald-900/10 rounded-2xl group transition-all">
+                                    <span className="text-lg group-hover:scale-125 transition-transform">🌟</span>
+                                    <p className="text-sm font-medium text-slate-600 dark:text-slate-300 leading-tight">{point}</p>
                                 </div>
                             ))}
                         </div>
-                    </section>
+                    </div>
 
-                    {/* 잘한 일 */}
-                    <section className="flex flex-col gap-4">
-                        <h2 className="text-lg font-bold text-slate-700 dark:text-slate-200">칭찬해! 내가 잘한 일들 🌟</h2>
-                        <div className="grid grid-cols-1 gap-3">
-                            {stats.recent_positive_points.flat().slice(0, 6).map((point, i) => (
-                                <div key={i} className="bg-haru-sky-light p-4 rounded-2xl border border-haru-sky-accent/30 text-sm font-medium text-slate-600 dark:text-slate-300">
-                                    👍 {point}
-                                </div>
-                            ))}
+                    {/* AI 코멘트 */}
+                    <div className="bg-slate-900 dark:bg-slate-100 p-6 rounded-[2.5rem] shadow-xl text-white dark:text-slate-900 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 dark:bg-slate-900/5 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-150 duration-700"></div>
+                        <div className="flex items-center gap-2 mb-3">
+                            <Sparkles size={16} className="text-amber-400" />
+                            <p className="text-xs font-bold opacity-70 uppercase tracking-widest text-amber-400">AI Counselor</p>
                         </div>
-                    </section>
-
-                    <div className="bg-slate-900 dark:bg-slate-700 p-6 rounded-3xl text-white">
-                        <p className="text-xs opacity-60 mb-1">AI의 한마디</p>
-                        <p className="text-sm font-medium leading-relaxed">
-                            최근 {Object.keys(stats.emotion_distribution)[0] || "다양한"} 감정을 많이 느끼셨네요.
-                            스스로를 다독여주는 시간이 더 필요할 것 같아요. 잘하고 계십니다! ☁️
+                        <p className="text-sm font-medium leading-relaxed relative z-10">
+                            최근 {pieData[0]?.name || "다양한"} 감정들이 마음속에 가득했네요.
+                            {pieData[0]?.name === '기쁨' ? "이 행복한 기운을 계속 간직하시길 바라요." : "조금은 지쳐있는 마음을 위해 따뜻한 차 한 잔 어떨까요?"}
+                            당신은 충분히 잘하고 있어요. ☁️
                         </p>
                     </div>
                 </div>
             )}
 
-            <footer className="mt-12 text-center text-slate-300 text-xs">통계는 마음을 비추는 거울이에요</footer>
+            <footer className="mt-8 text-center text-slate-400 text-[10px] font-medium opacity-50">차트 데이터는 지난 7일간의 기록을 바탕으로 생성됩니다</footer>
         </div>
     );
 }

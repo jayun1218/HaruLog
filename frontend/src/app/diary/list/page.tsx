@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "@/components/Toast";
+import { Sparkles, Image as ImageIcon, Lock, Unlock, Pin, ChevronUp, ChevronDown, Camera } from "lucide-react";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -22,6 +23,8 @@ interface Diary {
     analysis?: {
         summary: string;
         emotions: Record<string, number>;
+        keywords?: string[];
+        card_message?: string;
         positive_points?: string[];
         improvement_points?: string;
     };
@@ -62,13 +65,13 @@ export default function DiaryList() {
 
     useEffect(() => {
         Promise.all([
-            loadDiaries(),
+            loadDiaries(searchQ || undefined, filterCategoryId || undefined),
             fetch(`${API}/api/categories`).then(r => r.json()),
         ]).then(([, cats]) => {
             setCategories(Array.isArray(cats) ? cats : []);
             setIsLoading(false);
         }).catch(() => setIsLoading(false));
-    }, [loadDiaries]);
+    }, [loadDiaries, filterCategoryId]); // filterCategoryId 변경 시 자동 로드
 
     const handleSearch = () => {
         setIsSearchMode(!!(searchQ || filterCategoryId));
@@ -322,12 +325,18 @@ function DiaryCard({ diary, expandedId, setExpandedId, onPin, onRefresh }: {
                     </div>
                 </div>
                 {diary.analysis?.summary && (
-                    <p className="text-sm text-slate-500 bg-haru-sky-light p-3 rounded-xl border border-haru-sky-accent/30">✨ {diary.analysis.summary}</p>
+                    <p className="text-sm text-slate-500 bg-haru-sky-light/50 dark:bg-haru-sky-deep/5 p-3 rounded-xl border border-haru-sky-accent/20">✨ {diary.analysis.summary}</p>
                 )}
                 <div className="flex gap-2 flex-wrap">
-                    {diary.analysis?.emotions && Object.entries(diary.analysis.emotions).map(([em, score]) => (
-                        score > 0.3 && <span key={em} className="text-[10px] bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded-full text-slate-500 dark:text-slate-400">#{em}</span>
-                    ))}
+                    {diary.analysis?.keywords ? (
+                        diary.analysis.keywords.map((kw, i) => (
+                            <span key={i} className="text-[10px] font-bold text-haru-sky-deep bg-white dark:bg-slate-700 px-2 py-1 rounded-lg shadow-sm border border-haru-sky-accent/30 lowercase">#{kw}</span>
+                        ))
+                    ) : (
+                        diary.analysis?.emotions && Object.entries(diary.analysis.emotions).map(([em, score]) => (
+                            score > 0.3 && <span key={em} className="text-[10px] bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded-full text-slate-500 dark:text-slate-400">#{em}</span>
+                        ))
+                    )}
                 </div>
             </div>
 
@@ -337,6 +346,16 @@ function DiaryCard({ diary, expandedId, setExpandedId, onPin, onRefresh }: {
                     {diary.image_url && (
                         <img src={`${API}${diary.image_url}`} alt="첨부 이미지" className="w-full rounded-2xl object-cover max-h-48 mt-4" />
                     )}
+                    {/* AI 응원 카드 */}
+                    {diary.analysis?.card_message && (
+                        <div className="mt-4 bg-gradient-to-br from-indigo-500 to-purple-600 dark:from-indigo-600 dark:to-purple-800 p-6 rounded-[2rem] text-white shadow-xl relative overflow-hidden group">
+                            <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-1000"></div>
+                            <p className="text-[10px] font-bold opacity-70 mb-2 tracking-widest uppercase">AI Counselor's Card</p>
+                            <p className="text-base font-bold leading-relaxed mb-1">“ {diary.analysis.card_message} ”</p>
+                            <div className="flex justify-end opacity-50"><Sparkles size={14} /></div>
+                        </div>
+                    )}
+
                     <div className="pt-4">
                         <p className="text-xs font-semibold text-slate-400 mb-2">📝 일기 전문</p>
                         <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap bg-slate-50 dark:bg-slate-900 p-4 rounded-2xl">{diary.content}</p>
