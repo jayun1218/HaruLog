@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { toast } from "@/components/Toast";
+import AIAgent from "@/components/AIAgent";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -159,6 +160,8 @@ export default function Home() {
       <footer className="mt-12 text-slate-400 text-[10px] font-bold tracking-widest uppercase opacity-50">
         © 2026 HaruLog. All rights fluffy.
       </footer>
+
+      <AIAgent />
     </div>
   );
 }

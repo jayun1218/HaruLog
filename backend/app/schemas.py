@@ -78,3 +78,18 @@ class User(UserBase):
 
     class Config:
         from_attributes = True
+
+# AI Chat Schemas
+class AIChatMessage(BaseModel):
+    role: str
+    content: str
+
+class AIChatCreate(BaseModel):
+    message: str
+
+class AIChatResponse(BaseModel):
+    messages: List[AIChatMessage]
+    date: str
+
+    class Config:
+        from_attributes = True

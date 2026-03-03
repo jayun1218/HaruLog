@@ -344,3 +344,70 @@ def unlock_diary(diary_id: int, body: LockRequest, db: Session = Depends(get_db)
     diary.pin_hash = None
     db.commit()
     return {"is_locked": False}
+
+# --- AI Agent Chat API ---
+@router.post("/ai-chat", response_model=schemas.AIChatResponse)
+def post_ai_chat(body: schemas.AIChatCreate, db: Session = Depends(get_db), user_id: int = Depends(get_current_user_id)):
+    from datetime import date
+    today = date.today().isoformat()
+    
+    # 1. 기존의 오늘 대화방 조회
+    chat = db.query(models.AIChat).filter(
+        models.AIChat.user_id == user_id,
+        models.AIChat.date == today
+    ).first()
+    
+    if not chat:
+        chat = models.AIChat(user_id=user_id, date=today, messages=[])
+        db.add(chat)
+        db.commit()
+        db.refresh(chat)
+    
+    current_messages = list(chat.messages) if chat.messages else []
+    current_messages.append({"role": "user", "content": body.message})
+    
+    current_client = get_openai_client()
+    if not current_client:
+        # API 키가 없는 경우 더미 응답
+        reply = "안녕하세요! 지금은 테스트 모드예요. OpenAI API 키를 설정하면 더 똑똑한 대화와 운세, 타로를 봐드릴 수 있어요! ✨"
+        current_messages.append({"role": "assistant", "content": reply})
+        chat.messages = current_messages
+        db.commit()
+        return chat
+        
+    try:
+        system_msg = {
+            "role": "system", 
+            "content": (
+                "너는 'HaruLog'라는 일기 앱의 마스코트인 따뜻한 구름 AI야. "
+                "사용자의 일상 대화, 고민 상담뿐만 아니라 오늘의 운세나 타로 점을 봐주기도 해. "
+                "항상 친절하고 다정하며, 이모지를 적절히 사용하여 귀엽게 말해줘. "
+                "운세나 타로 요청이 오면 신비롭고 긍정적인 방향으로 답변해줘. 반드시 한국어로만 답해."
+            )
+        }
+        
+        response = current_client.chat.completions.create(
+            model="gpt-4o",
+            messages=[system_msg] + current_messages[-10:], # 최근 10개 메시지만 문맥으로 전달
+            max_tokens=600
+        )
+        
+        reply = response.choices[0].message.content
+        current_messages.append({"role": "assistant", "content": reply})
+        chat.messages = current_messages
+        db.commit()
+        db.refresh(chat)
+        return chat
+    except Exception as e:
+        print(f"AI Chat error: {e}")
+        raise HTTPException(status_code=500, detail="AI 대화 중 오류가 발생했습니다.")
+
+@router.get("/ai-chat/{date_str}", response_model=schemas.AIChatResponse)
+def get_ai_chat(date_str: str, db: Session = Depends(get_db), user_id: int = Depends(get_current_user_id)):
+    chat = db.query(models.AIChat).filter(
+        models.AIChat.user_id == user_id,
+        models.AIChat.date == date_str
+    ).first()
+    if not chat:
+        return {"messages": [], "date": date_str}
+    return chat

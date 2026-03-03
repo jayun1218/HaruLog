@@ -58,3 +58,13 @@ class EmotionAnalysis(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     diary = relationship("Diary", back_populates="analysis")
+
+class AIChat(Base):
+    __tablename__ = "ai_chats"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    date = Column(String, index=True)  # YYYY-MM-DD
+    messages = Column(JSON)  # [{"role": "user", "content": "..."}, {"role": "assistant", "content": "..."}]
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
