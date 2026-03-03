@@ -26,7 +26,9 @@ export default function MonthlyReport() {
         }
     };
 
-    useEffect(() => { fetchReport(); }, []);
+    useEffect(() => {
+        fetchReport();
+    }, [year, month]);
 
     return (
         <div className="flex flex-col p-6 min-h-[100dvh] max-w-md mx-auto bg-slate-50 dark:bg-slate-900 transition-colors">
@@ -37,10 +39,10 @@ export default function MonthlyReport() {
 
             {/* 월 선택 */}
             <div className="flex items-center gap-3 mb-6 bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-soft">
-                <button onClick={() => { const d = new Date(year, month - 2, 1); setYear(d.getFullYear()); setMonth(d.getMonth() + 1); }} className="w-9 h-9 rounded-full bg-slate-50 dark:bg-slate-700 hover:bg-haru-sky-light flex items-center justify-center">‹</button>
+                <button onClick={() => { const d = new Date(year, month - 2, 1); setYear(d.getFullYear()); setMonth(d.getMonth() + 1); setReport(null); }} className="w-9 h-9 rounded-full bg-slate-50 dark:bg-slate-700 hover:bg-haru-sky-accent flex items-center justify-center text-slate-400 hover:text-haru-sky-deep transition-colors">‹</button>
                 <span className="flex-1 text-center font-bold text-foreground dark:text-slate-100">{year}년 {month}월</span>
-                <button onClick={() => { const d = new Date(year, month, 1); setYear(d.getFullYear()); setMonth(d.getMonth() + 1); }} className="w-9 h-9 rounded-full bg-slate-50 hover:bg-haru-sky-light flex items-center justify-center">›</button>
-                <button onClick={fetchReport} className="px-4 py-2 bg-haru-sky-medium text-haru-sky-deep font-bold rounded-xl text-sm hover:bg-haru-sky-accent transition-colors">분석</button>
+                <button onClick={() => { const d = new Date(year, month, 1); setYear(d.getFullYear()); setMonth(d.getMonth() + 1); setReport(null); }} className="w-9 h-9 rounded-full bg-slate-50 dark:bg-slate-700 hover:bg-haru-sky-accent flex items-center justify-center text-slate-400 hover:text-haru-sky-deep transition-colors">›</button>
+                <button onClick={fetchReport} className="px-4 py-2 bg-haru-sky-medium text-haru-sky-deep font-bold rounded-xl text-sm hover:bg-haru-sky-accent transition-colors">재분석</button>
             </div>
 
             {isLoading ? (
