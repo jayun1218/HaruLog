@@ -23,7 +23,8 @@
 | #️⃣ **자동 키워드 추출** | 일기 내용에서 핵심 키워드를 해시태그로 추출 (#산책 #행복 #여유) |
 | � **AI 응원 카드** | 지친 하루 끝에 AI가 건네는 따뜻한 한 줄 응원 메시지 카드 |
 | 🤗 **AI 심층 대화** | 작성한 일기 내용을 바탕으로 AI 카운슬러와 실시간 채팅 |
-| 💌 **AI 월간 리포트** | 한 달간의 감정 흐름과 성장 포인트를 종합 분석 |
+| ☁️ **메인 AI 에이전트** | 홈 화면의 구름 에이전트와 나누는 일상 대화 및 운세/타로 서비스 [NEW] |
+| 💌 **AI 월간 리포트** | 월별 자동 갱신 및 데이터 동기화가 강화된 종합 분석 리포트 [UPDATED] |
 
 ### 기록 보기 & 관리
 | 기능 | 설명 |
@@ -80,12 +81,14 @@ HaruLog/
 │   ├── page.tsx              # 홈 (스트릭, 구름 애니메이션)
 │   ├── diary/write/          # 일기 작성 (STT, 이미지)
 │   ├── diary/list/           # 달력 및 리스트 (필터링, 갤러리 링크)
-│   ├── diary/gallery/        # 추억 갤러리 모드 [NEW]
-│   ├── statistics/           # 감정 통계 시각화 (Recharts) [UPDATED]
-│   └── report/               # AI 월간 리포트
+│   ├── diary/gallery/        # 추억 갤러리 모드
+│   ├── statistics/           # 감정 통계 시각화
+│   └── report/               # AI 월간 리포트 (자동 로딩 개선)
+├── frontend/src/components/
+│   └── AIAgent.tsx           # 메인 화면 인터랙티브 AI 에이전트 [NEW]
 ├── backend/app/
-│   ├── api.py                # AI 분석 처리 및 API 엔드포인트
-│   ├── models.py             # DB 스키마 (Keywords/Card Message 추가)
+│   ├── api.py                # AI 분석 처리 및 실시간 채팅 엔드포인트
+│   ├── models.py             # DB 스키마 (AIChat 테이블 추가)
 │   └── database.py           # DB 연결 및 커넥션 관리
 ├── .env                      # 환경 변수 (OpenAI API 키 등)
 └── README.md
@@ -98,7 +101,8 @@ HaruLog/
 - [x] GPT-4o 기반 AI 요약, 해시태그, 응원 카드 기능
 - [x] 감정 분포 통계 시각화 (Charts) 및 갤러리 모드
 - [x] 달력 - 리스트 - 카테고리 필터링 완벽 연동
-- [x] AI 월간 종합 리포트 및 채팅 서비스
+- [x] AI 월간 종합 리포트 고도화 (자동 갱신 및 데이터 위생)
+- [x] 메인 화면 인터랙티브 AI 에이전트 (데일리 채팅, 운세, 타로)
 - [ ] 소셜 로그인 (Auth.js v5)
 - [ ] 모바일 앱 버전 (React Native)
 
