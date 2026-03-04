@@ -4,6 +4,8 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { toast } from "@/components/Toast";
 import AIAgent from "@/components/AIAgent";
+import FortuneTeller from "@/components/FortuneTeller";
+import TarotReader from "@/components/TarotReader";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -161,6 +163,8 @@ export default function Home() {
         © 2026 HaruLog. All rights fluffy.
       </footer>
 
+      <TarotReader />
+      <FortuneTeller />
       <AIAgent />
     </div>
   );
