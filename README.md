@@ -11,37 +11,38 @@
 | 기능 | 설명 |
 |---|---|
 | 🎤 **실시간 음성 인식** | Web Speech API로 말하는 즉시 텍스트 입력 |
-| ☁️ **마이크로 애니메이션** | 홈 화면의 둥둥 떠다니는 구름 마스코트와 부드러운 인터랙션 |
-| 😊 **기분 이모지 선택** | 오늘 기분을 이모지로 직접 태그하고 달력에 수집 |
-| 📁 **카테고리 관리** | 카테고리별 분류 및 필터링 기능 |
-| 📷 **이미지 첨부** | 소중한 순간의 사진을 일기에 함께 저장 |
+| ✍️ **AI 제목 자동 추천** | 내용 입력 후 GPT가 감성적인 제목 3개를 추천, 클릭하면 자동 입력 |
+| 😊 **기분 이모지 선택** | 오늘 기분을 이모지로 태그하고 달력에 수집 |
+| 📁 **카테고리 관리** | 카테고리별 분류 및 필터링 |
+| 📷 **이미지 첨부** | 소중한 사진을 일기에 함께 저장 |
+| 🔒 **PIN 잠금** | 개인적인 기록을 PIN 번호로 보호 |
 
-### AI 기능 고도화
+### AI 기능
 | 기능 | 설명 |
 |---|---|
-| 🤖 **AI 자동 분석** | GPT-4o가 일기를 읽고 요약, 감정 점수, 칭찬/개선점 도출 |
-| #️⃣ **자동 키워드 추출** | 일기 내용에서 핵심 키워드를 해시태그로 추출 (#산책 #행복 #여유) |
-| 🃏 **오늘의 타로** | 독립형 타로 컴포넌트 - 카드 선택 및 운명 읽기 [DETACHED] |
-| 🍀 **오늘의 운세** | 독립형 운세 컴포넌트 - 매일 새로운 행운 메시지 [DETACHED] |
-| ☁️ **메인 AI 에이전트** | 홈 화면의 구름 에이전트와 나누는 따뜻한 일상 대화 [REFACTORED] |
-| 💌 **AI 월간 리포트** | 월별 자동 갱신 및 데이터 동기화가 강화된 종합 분석 리포트 |
+| 🤖 **AI 자동 분석** | GPT-4o가 요약·감정 점수·칭찬/개선점·키워드 자동 도출 |
+| ☁️ **AI 에이전트 (구름)** | 홈 화면의 구름 마스코트와 나누는 따뜻한 일상 대화 |
+| 🍀 **오늘의 운세** | 매일 새로운 행운 메시지 |
+| 🃏 **타로 3장 스프레드** | 과거·현재·미래 카드 선택, DALL-E 3가 테마별 카드 이미지 실시간 생성 |
+| 💌 **AI 월간 리포트** | 한 달의 감정 흐름을 종합 분석한 자동 리포트 |
 
 ### 기록 보기 & 관리
 | 기능 | 설명 |
 |---|---|
-| 📅 **인텔리전트 캘린더** | 기분 이모지와 필터링이 연동되는 스마트 달력 뷰 |
-| � **비주얼 통계** | Recharts를 활용한 감정 분포 및 변화 추이 시각화 |
-| � **중요 일기 고정** | 핀 기능을 사용하여 소중한 기억을 리스트 최상단에 유지 |
-| � **안전한 일기 잠금** | 개인적인 기록을 보호하기 위한 PIN 번호 잠금 기능 |
+| 🎨 **감정 히트맵 캘린더** | 감정별 배경색(기쁨=노랑, 슬픔=파랑 등)으로 한눈에 보는 마음 지도 |
+| 🔥 **스트릭 뱃지** | 연속 작성 일수에 따라 🌱새싹→🔥불꽃→⭐별→👑왕관 단계별 뱃지 |
+| 📊 **감정 통계** | Recharts 기반 감정 분포 & 추이 시각화 |
+| 🖼 **추억 갤러리** | 이미지 첨부 일기 모아보기 |
+| 📤 **SNS 공유 카드** | 일기를 예쁜 카드로 변환하여 PNG 이미지로 저장 |
+| 📌 **일기 고정** | 중요한 기록을 리스트 최상단에 핀으로 고정 |
 
 ---
 
 ## 🛠 기술 스택
 
-**Frontend**: Next.js 16 (App Router) · Tailwind CSS · Recharts (시각화) · Lucide React (아이콘)  
+**Frontend**: Next.js (App Router) · Tailwind CSS · Recharts · Lucide React · html2canvas  
 **Backend**: Python · FastAPI · PostgreSQL (SQLAlchemy) · python-dotenv  
-**AI**: OpenAI GPT-4o (분석 · 요약 · 대화 · 리포트) · Whisper-1 (STT)  
-**인프라**: Docker Compose (Optional) · Local Environments 지원
+**AI**: OpenAI GPT-4o (분석 · 대화 · 제목추천 · 리포트) · DALL-E 3 (타로 이미지) · Whisper-1 (STT)
 
 ---
 
@@ -50,16 +51,15 @@
 ### 1. 환경 변수 설정
 프로젝트 루트에 `.env` 파일을 생성하세요:
 ```env
-DATABASE_URL=postgresql://jayun@localhost:5432/mindtrace # 로컬 DB 기준
-OPENAI_API_KEY=sk-...         # AI 분석 및 요약에 필수
-NEXTAUTH_SECRET=yoursecret    # 보안용 임의 문자열
+DATABASE_URL=postgresql://jayun@localhost:5432/mindtrace
+OPENAI_API_KEY=sk-...
 ```
 
 ### 2. 백엔드 실행
 ```bash
 cd backend
 pip install -r requirements.txt
-python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+uvicorn app.main:app --reload --port 8000
 ```
 
 ### 3. 프론트엔드 실행
@@ -68,7 +68,7 @@ cd frontend
 npm install
 npm run dev
 ```
-접속 주소: [http://localhost:3000](http://localhost:3000) (또는 사용 중인 포트 확인)
+접속: [http://localhost:3000](http://localhost:3000)
 
 ---
 
@@ -77,33 +77,36 @@ npm run dev
 ```
 HaruLog/
 ├── frontend/src/app/
-│   ├── page.tsx              # 홈 (스트릭, 구름 애니메이션)
-│   ├── diary/write/          # 일기 작성 (STT, 이미지)
-│   ├── diary/list/           # 달력 및 리스트 (필터링, 갤러리 링크)
-│   ├── diary/gallery/        # 추억 갤러리 모드
+│   ├── page.tsx              # 홈 (스트릭 뱃지, 구름 애니메이션)
+│   ├── diary/write/          # 일기 작성 (STT, AI 제목 추천)
+│   ├── diary/list/           # 감정 히트맵 달력 + 리스트
+│   ├── diary/gallery/        # 추억 갤러리
 │   ├── statistics/           # 감정 통계 시각화
-│   └── report/               # AI 월간 리포트 (자동 로딩 개선)
+│   └── report/               # AI 월간 리포트
 ├── frontend/src/components/
-│   ├── AIAgent.tsx           # 순수 채팅 전용 AI 에이전트 [REFACTORED]
-│   ├── FortuneTeller.tsx     # 독립형 오늘의 운세 컴포넌트 [NEW]
-│   └── TarotReader.tsx       # 독립형 오늘의 타로 컴포넌트 [NEW]
+│   ├── AIAgent.tsx           # 구름 AI 에이전트 채팅
+│   ├── FortuneTeller.tsx     # 오늘의 운세
+│   ├── TarotReader.tsx       # 타로 3장 스프레드 (DALL-E 3 이미지)
+│   └── ShareCard.tsx         # SNS 공유 카드 (html2canvas)
 ├── backend/app/
-│   ├── api.py                # AI 분석 및 채팅/운세/타로 통합 엔드포인트
-│   ├── models.py             # DB 스키마 (AIChat: 선택된 카드 정보 저장)
-│   └── database.py           # DB 연결 및 커넥션 관리
-├── .env                      # 환경 변수 (OpenAI API 키 등)
-└── README.md
+│   ├── api.py                # 모든 API 엔드포인트
+│   ├── models.py             # DB 스키마
+│   └── database.py           # DB 연결
+└── .env
 ```
 
 ---
 
 ## 📅 로드맵
-- [x] 실시간 음성 인식 및 감성적인 UI/UX 개선
-- [x] GPT-4o 기반 AI 요약, 해시태그, 응원 카드 기능
-- [x] 감정 분포 통계 시각화 (Charts) 및 갤러리 모드
-- [x] 달력 - 리스트 - 카테고리 필터링 완벽 연동
-- [x] AI 월간 종합 리포트 고도화 (자동 갱신 및 데이터 위생)
-- [x] 메인 화면 인터랙티브 AI 에이전트 및 독립형 운세/타로 기능 분리
+- [x] 실시간 음성 인식 및 감성적인 UI/UX
+- [x] GPT-4o 기반 AI 분석 (요약·키워드·감정·응원 카드)
+- [x] 감정 통계 시각화 & 갤러리 모드
+- [x] AI 에이전트 + 독립형 운세/타로 분리
+- [x] 타로 3장 스프레드 + DALL-E 3 카드 이미지 생성
+- [x] AI 일기 제목 자동 추천
+- [x] 감정 히트맵 캘린더
+- [x] 스트릭 뱃지 시스템 (🌱🔥⭐👑)
+- [x] SNS 공유 카드 (PNG 다운로드)
 - [ ] 소셜 로그인 (Auth.js v5)
 - [ ] 모바일 앱 버전 (React Native)
 
