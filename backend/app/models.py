@@ -69,5 +69,6 @@ class AIChat(Base):
     fortune = Column(Text, nullable=True)
     tarot = Column(Text, nullable=True)
     selected_card = Column(Integer, nullable=True)
+    mood = Column(String, nullable=True)  # 추가: 에이전트의 감정 상태 (NORMAL, HAPPY 등)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

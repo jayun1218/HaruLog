@@ -418,6 +418,7 @@ def post_ai_chat(body: schemas.AIChatCreate, db: Session = Depends(get_db), user
         reply = "안녕하세요! 지금은 테스트 모드예요. OpenAI API 키를 설정하면 더 똑똑한 대화와 운세, 타로를 봐드릴 수 있어요! ✨"
         current_messages.append({"role": "assistant", "content": reply})
         chat.messages = current_messages
+        chat.mood = "NORMAL" # 기본 무드 설정
         db.commit()
         return chat
         
@@ -429,13 +430,13 @@ def post_ai_chat(body: schemas.AIChatCreate, db: Session = Depends(get_db), user
                 "사용자의 일상 대화, 고민 상담뿐만 아니라 오늘의 운세나 타로 점을 봐주기도 해. "
                 "항상 친절하고 다정하며, 이모지를 적절히 사용하여 귀엽게 말해줘.\n\n"
                 "1. 일상 대화: 사용자의 말에 공감하고 따뜻한 위로를 건네줘." + diary_context + "\n"
-                "2. 오늘의 운세: 반드시 아래 형식을 지키고 각 항목 뒤에 줄바꿈(\n)을 넣어줘. '물론이지' 같은 서두는 절대 금지야.\n"
+                "2. 오늘의 운세: 반드시 아래 형식을 지키고 각 항목 뒤에 줄바꿈(\\n)을 넣어줘. '물론이지' 같은 서두는 절대 금지야.\n"
                 "오늘의 운세 쪽지\n"
                 "행운의 컬러 : [컬러]\n"
                 "행운의 장소 : [장소]\n"
                 "오늘의 메시지 : [메시지]\n"
                 "3. 타로 점보기: 선택한 카드의 의미와 조언을 신비롭고 명확하게 전달하며, 가독성을 위해 줄바꿈을 자주 사용해줘.\n\n"
-                "**[중요] 응답 형식**: 반드시 JSON 형식으로 답해줘. 필드는 'reply' (답변 내용)와 'mood' (현재 감정 상태) 두 가지야.\n"
+                "**[중요] 응답 형식**: 반드시 json 형식으로만 답해줘. 필드는 'reply' (답변 내용)와 'mood' (현재 감정 상태) 두 가지야.\n"
                 "감정 상태(mood)는 다음 중 하나만 선택해: NORMAL, HAPPY, SAD, COOL, THINKING.\n"
                 "진심을 담아 따뜻하게 답변하고, 반드시 한국어로만 답해."
             )
@@ -448,9 +449,18 @@ def post_ai_chat(body: schemas.AIChatCreate, db: Session = Depends(get_db), user
             max_tokens=800
         )
         
-        result = json.loads(response.choices[0].message.content)
-        reply = result.get("reply", "")
-        chat.mood = result.get("mood", "NORMAL")
+        raw_content = response.choices[0].message.content
+        try:
+            result = json.loads(raw_content)
+            reply = result.get("reply", raw_content)
+            mood_val = result.get("mood", "NORMAL").upper()
+        except:
+            reply = raw_content
+            mood_val = "NORMAL"
+
+        if mood_val not in ["NORMAL", "HAPPY", "SAD", "COOL", "THINKING"]:
+            mood_val = "NORMAL"
+        chat.mood = mood_val
         
         current_messages.append({"role": "assistant", "content": reply})
         chat.messages = current_messages
@@ -470,8 +480,10 @@ def post_ai_chat(body: schemas.AIChatCreate, db: Session = Depends(get_db), user
         db.refresh(chat)
         return chat
     except Exception as e:
+        import traceback
         print(f"AI Chat error: {e}")
-        raise HTTPException(status_code=500, detail="AI 대화 중 오류가 발생했습니다.")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"AI 대화 중 오류가 발생했습니다: {str(e)}")
 
 @router.get("/ai-chat/{date_str}", response_model=schemas.AIChatResponse)
 def get_ai_chat(date_str: str, db: Session = Depends(get_db), user_id: int = Depends(get_current_user_id)):
