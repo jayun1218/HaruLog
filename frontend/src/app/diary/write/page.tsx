@@ -4,182 +4,142 @@ import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "@/components/Toast";
+import { Sparkles, ArrowRight, RotateCcw, Mic, Save, X, Plus } from "lucide-react";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+const MOODS = [
+    { id: "joy", label: "기쁨", emoji: "😊", color: "#FCD34D" },
+    { id: "sadness", label: "슬픔", emoji: "😢", color: "#60A5FA" },
+    { id: "anger", label: "분노", emoji: "😤", color: "#FB7185" },
+    { id: "anxiety", label: "불안", emoji: "😰", color: "#F472B6" },
+    { id: "calm", label: "평온", emoji: "😌", color: "#34D399" },
+];
+
+const COLOR_ADJECTIVES = {
+    joy: ["찬란한", "따스한", "반짝이는", "활기찬", "달콤한"],
+    sadness: ["애틋한", "깊은", "잔잔한", "아련한", "투명한"],
+    anger: ["강렬한", "뜨거운", "선명한", "타오르는", "확고한"],
+    anxiety: ["몽환적인", "묘한", "복잡한", "흔들리는", "신비로운"],
+    calm: ["고요한", "편안한", "부드러운", "차분한", "포근한"],
+};
+
+const COLOR_NOUNS = {
+    joy: ["태양", "축제", "미소", "오후", "선물"],
+    sadness: ["바다", "비", "그림자", "새벽", "이슬"],
+    anger: ["불꽃", "노을", "심장", "번개", "의지"],
+    anxiety: ["안개", "숲", "구름", "달빛", "비밀"],
+    calm: ["바람", "숲", "호수", "담요", "낮잠"],
+};
+
+function hexToRgb(hex: string) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+    } : { r: 0, g: 0, b: 0 };
+}
+
+function componentToHex(c: number) {
+    const hex = Math.round(c).toString(16);
+    return hex.length === 1 ? "0" + hex : hex;
+}
+
+function rgbToHex(r: number, g: number, b: number) {
+    return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+}
 
 function DiaryWriteInner() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const initialDate = searchParams.get("date");
 
+    // --- State ---
+    const [step, setStep] = useState(1); // 1: Mixing, 2: Result, 3: Writing
+    const [moodCounts, setMoodCounts] = useState<Record<string, number>>({
+        joy: 0, sadness: 0, anger: 0, anxiety: 0, calm: 0
+    });
+    const [mixedColor, setMixedColor] = useState("#F8FAFC");
+    const [colorName, setColorName] = useState("");
+
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
-    const [interimText, setInterimText] = useState(""); // 실시간 인식 중인 텍스트
-    const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
+    const [selectedDate, setSelectedDate] = useState<string>(initialDate || new Date().toISOString().slice(0, 10));
     const [selectedCategoryId, setSelectedCategoryId] = useState<number | "">("");
-    const [newCategoryName, setNewCategoryName] = useState("");
+    const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
+    const [interimText, setInterimText] = useState("");
     const [isRecording, setIsRecording] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [speechSupported, setSpeechSupported] = useState(true);
-    const [suggestedTitles, setSuggestedTitles] = useState<string[]>([]);
     const [isSuggestingTitle, setIsSuggestingTitle] = useState(false);
-    const getLocalToday = () => {
-        const now = new Date();
-        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    };
-
-    const [selectedDate, setSelectedDate] = useState<string>(
-        initialDate || getLocalToday()
-    );
-    const [selectedMood, setSelectedMood] = useState<string>("");
+    const [suggestedTitles, setSuggestedTitles] = useState<string[]>([]);
 
     const recognitionRef = useRef<any>(null);
 
+    // --- Effects ---
     useEffect(() => {
-        // Web Speech API 지원 여부 확인
-        if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
-            setSpeechSupported(false);
-        }
-
         fetch(`${API}/api/categories`)
             .then(res => res.json())
-            .then(data => setCategories(Array.isArray(data) ? data : []))
-            .catch(err => console.error("카테고리 로드 실패:", err));
-
-        // 임시저장 불러오기
-        const saved = localStorage.getItem("harulog_draft");
-        if (saved) {
-            const { title: t, content: c, mood: m } = JSON.parse(saved);
-            if (t || c || m) {
-                setTitle(t || "");
-                setContent(c || "");
-                setSelectedMood(m || "");
-                toast("이전에 쓰던 내용을 불러왔어요 ✍️", "info");
-            }
-        }
+            .then(data => setCategories(Array.isArray(data) ? data : []));
     }, []);
 
-    // 자동 임시저장
+    // 색상 조합 로직
     useEffect(() => {
-        const timer = setTimeout(() => {
-            if (title || content || selectedMood) {
-                localStorage.setItem("harulog_draft", JSON.stringify({ title, content, mood: selectedMood }));
-            }
-        }, 3000);
-        return () => clearTimeout(timer);
-    }, [title, content, selectedMood]);
-
-    const handleAddCategory = async () => {
-        if (!newCategoryName.trim()) return;
-        try {
-            const res = await fetch(`${API}/api/categories`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name: newCategoryName })
-            });
-            const data = await res.json();
-            setCategories([...categories, data]);
-            toast("카테고리가 추가되었습니다.", "success");
-            setNewCategoryName("");
-            setSelectedCategoryId(data.id);
-        } catch {
-            toast("카테고리 추가에 실패했습니다.", "error");
-        }
-    };
-
-    const handleDeleteCategory = async (id: number) => {
-        const target = categories.find(c => c.id === id);
-        const catName = target?.name || "이 카테고리";
-        if (!confirm(`"${catName}" 카테고리를 삭제하시겠습니까?\n\n⚠️ 해당 카테고리의 일기도 모두 함께 삭제됩니다.`)) return;
-        try {
-            const res = await fetch(`${API}/api/categories/${id}`, { method: "DELETE" });
-            const data = await res.json();
-            setCategories(categories.filter(c => c.id !== id));
-            if (selectedCategoryId === id) setSelectedCategoryId("");
-            if (data.deleted_diaries > 0) {
-                alert(`"${catName}" 카테고리와 일기 ${data.deleted_diaries}개가 삭제되었습니다.`);
-            }
-        } catch {
-            alert("카테고리 삭제에 실패했습니다.");
-        }
-    };
-
-    const startRecording = () => {
-        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-
-        if (!SpeechRecognition) {
-            alert("이 브라우저는 음성 인식을 지원하지 않습니다. Chrome 또는 Edge를 사용해 주세요.");
+        const totalSpoons = Object.values(moodCounts).reduce((a, b) => a + b, 0);
+        if (totalSpoons === 0) {
+            setMixedColor("#F8FAFC");
             return;
         }
 
-        const recognition = new SpeechRecognition();
-        recognition.lang = "ko-KR";
-        recognition.interimResults = true; // 실시간 중간 결과 표시
-        recognition.continuous = true;     // 계속 듣기
+        let r = 0, g = 0, b = 0;
+        Object.entries(moodCounts).forEach(([id, count]) => {
+            if (count === 0) return;
+            const mood = MOODS.find(m => m.id === id)!;
+            const rgb = hexToRgb(mood.color);
+            const weight = count / totalSpoons;
+            r += rgb.r * weight;
+            g += rgb.g * weight;
+            b += rgb.b * weight;
+        });
 
-        let finalTranscript = "";
+        setMixedColor(rgbToHex(r, g, b));
+    }, [moodCounts]);
 
-        recognition.onresult = (event: any) => {
-            let interim = "";
-
-            for (let i = event.resultIndex; i < event.results.length; i++) {
-                const transcript = event.results[i][0].transcript;
-                if (event.results[i].isFinal) {
-                    finalTranscript += transcript;
-                } else {
-                    interim += transcript;
-                }
-            }
-
-            // 확정된 텍스트는 content에 추가, 인식 중인 텍스트는 별도 표시
-            if (finalTranscript) {
-                setContent(prev => {
-                    const base = prev.trimEnd();
-                    return base ? `${base} ${finalTranscript}` : finalTranscript;
-                });
-                finalTranscript = "";
-            }
-            setInterimText(interim);
-        };
-
-        recognition.onerror = (event: any) => {
-            // no-speech: 조용해서 말 안 할 때 정상 발생, 무시하고 기다림
-            // aborted: 개발자가 직접 stop() 호출 시 발생, 정상
-            if (event.error === "no-speech" || event.error === "aborted") return;
-            console.error("Speech recognition error:", event.error);
-            setIsRecording(false);
-            setInterimText("");
-        };
-
-        recognition.onend = () => {
-            // 사용자가 멈치 않았고 세션이 끊기면 (예: no-speech timeout) 자동 재시작
-            if (recognitionRef.current) {
-                try {
-                    recognitionRef.current.start();
-                } catch {
-                    // 이미 실행 중이면 무시
-                }
-            }
-        };
-
-        recognitionRef.current = recognition;
-        recognition.start();
-        setIsRecording(true);
+    // --- Handlers ---
+    const addSpoon = (id: string) => {
+        const total = Object.values(moodCounts).reduce((a, b) => a + b, 0);
+        if (total >= 10) {
+            toast("냄비가 가득 찼어요! 이제 섞어볼까요?", "info");
+            return;
+        }
+        setMoodCounts(prev => ({ ...prev, [id]: prev[id] + 1 }));
     };
 
-    const stopRecording = () => {
-        if (recognitionRef.current) {
-            recognitionRef.current.stop();
-            recognitionRef.current = null;
+    const resetPot = () => {
+        setMoodCounts({ joy: 0, sadness: 0, anger: 0, anxiety: 0, calm: 0 });
+    };
+
+    const handleMix = () => {
+        const total = Object.values(moodCounts).reduce((a, b) => a + b, 0);
+        if (total === 0) {
+            toast("감정을 한 스푼 이상 넣어주세요 🥣", "info");
+            return;
         }
-        setIsRecording(false);
-        setInterimText("");
+
+        // 이름 생성 로직
+        const dominantMoodId = Object.entries(moodCounts).sort((a, b) => b[1] - a[1])[0][0];
+        const adjectives = (COLOR_ADJECTIVES as any)[dominantMoodId];
+        const nouns = (COLOR_NOUNS as any)[dominantMoodId];
+        const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
+        const noun = nouns[Math.floor(Math.random() * nouns.length)];
+
+        setColorName(`${adj} ${noun}의 ${MOODS.find(m => m.id === dominantMoodId)!.label}`);
+        setStep(2);
     };
 
     const handleSuggestTitle = async () => {
-        if (!content.trim()) { toast("내용을 먼저 입력해주세요!", "info"); return; }
+        if (!content.trim()) return;
         setIsSuggestingTitle(true);
-        setSuggestedTitles([]);
         try {
             const res = await fetch(`${API}/api/suggest-title`, {
                 method: "POST",
@@ -188,17 +148,14 @@ function DiaryWriteInner() {
             });
             const data = await res.json();
             setSuggestedTitles(data.titles || []);
-        } catch {
-            toast("제목 추천 중 오류가 발생했어요.", "error");
         } finally {
             setIsSuggestingTitle(false);
         }
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleSubmit = async () => {
         if (!title || !content) {
-            alert("제목과 내용을 모두 입력해주세요!");
+            toast("제목과 내용을 입력해주세요!", "info");
             return;
         }
         setIsSubmitting(true);
@@ -206,193 +163,304 @@ function DiaryWriteInner() {
             const res = await fetch(`${API}/api/diaries`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ title, content, category_id: selectedCategoryId || null, date: selectedDate, mood: selectedMood || null })
+                body: JSON.stringify({
+                    title,
+                    content,
+                    category_id: selectedCategoryId || null,
+                    date: selectedDate,
+                    mood: MOODS.find(m => m.id === Object.entries(moodCounts).sort((a, b) => b[1] - a[1])[0][0])?.emoji,
+                    mood_counts: moodCounts,
+                    color_code: mixedColor,
+                    color_name: colorName
+                })
             });
-
             if (res.ok) {
-                localStorage.removeItem("harulog_draft");
-                toast("오늘의 하루가 소중하게 저장되었어요 ✨", "success");
+                toast("오늘의 색상이 소중하게 저장되었어요 ✨", "success");
                 router.push("/diary/list");
-            } else {
-                const err = await res.json();
-                throw new Error(err.detail || "Failed to save diary");
             }
-        } catch (err: any) {
-            toast(`저장에 실패했습니다: ${err.message}`, "error");
+        } catch {
+            toast("저장에 실패했어요.", "error");
         } finally {
             setIsSubmitting(false);
         }
     };
 
+    // --- STT ---
+    const startRecording = () => {
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        if (!SpeechRecognition) return;
+        const recognition = new SpeechRecognition();
+        recognition.lang = "ko-KR";
+        recognition.interimResults = true;
+        recognition.continuous = true;
+        recognition.onresult = (e: any) => {
+            let interim = "";
+            let final = "";
+            for (let i = e.resultIndex; i < e.results.length; i++) {
+                if (e.results[i].isFinal) final += e.results[i][0].transcript;
+                else interim += e.results[i][0].transcript;
+            }
+            if (final) setContent(prev => prev + " " + final);
+            setInterimText(interim);
+        };
+        recognition.onend = () => isRecording && recognition.start();
+        recognitionRef.current = recognition;
+        recognition.start();
+        setIsRecording(true);
+    };
+
+    const stopRecording = () => {
+        recognitionRef.current?.stop();
+        setIsRecording(false);
+        setInterimText("");
+    };
+
+    // --- Render Helpers ---
+    const totalSpoons = Object.values(moodCounts).reduce((a, b) => a + b, 0);
+
     return (
-        <div className="flex flex-col p-6 min-h-[100dvh] max-w-md mx-auto bg-white dark:bg-slate-900 transition-colors">
-            <header className="flex items-center gap-4 mb-8">
-                <Link href="/" className="p-2 -ml-2 text-slate-400 hover:text-foreground">✕</Link>
-                <div>
-                    <h1 className="text-2xl font-bold">일기 쓰기</h1>
+        <div className="min-h-[100dvh] transition-colors duration-700 bg-white dark:bg-slate-950 flex flex-col items-center p-6 pb-12">
+
+            {/* Header */}
+            <header className="w-full max-w-md flex justify-between items-center mb-12">
+                <Link href="/" className="p-2 -ml-2 text-slate-400 hover:text-foreground transition-colors">
+                    <X size={24} />
+                </Link>
+                <div className="flex-1 text-center">
+                    <span className="text-[10px] font-black tracking-widest uppercase text-slate-400 opacity-50">Step {step} / 3</span>
+                    <h1 className="text-xl font-bold text-foreground">
+                        {step === 1 ? "감정 스푼 담기" : step === 2 ? "오늘의 감정 색" : "일기 적기"}
+                    </h1>
                 </div>
+                <div className="w-10"></div>
             </header>
 
-            <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-                {/* 날짜 선택 */}
-                <div className="flex flex-col gap-2">
-                    <label className="text-sm font-semibold text-slate-500 dark:text-slate-400">날짜</label>
-                    <input
-                        type="date"
-                        value={selectedDate}
-                        onChange={(e) => setSelectedDate(e.target.value)}
-                        max={getLocalToday()}
-                        className="w-full p-4 bg-slate-50 dark:bg-slate-800 dark:text-slate-200 rounded-2xl border-none focus:ring-2 focus:ring-haru-sky-accent outline-none text-base font-medium text-slate-700"
-                    />
-                </div>
-
-                {/* 기분 태그 */}
-                <div className="flex flex-col gap-2">
-                    <label className="text-sm font-semibold text-slate-500 dark:text-slate-400">오늘 기분은요?</label>
-                    <div className="flex gap-2 flex-wrap">
-                        {["😊", "😄", "😌", "🥰", "😢", "😰", "😤", "😴", "🤔", "😶"].map(emoji => (
-                            <button
-                                key={emoji}
-                                type="button"
-                                onClick={() => setSelectedMood(selectedMood === emoji ? "" : emoji)}
-                                className={`w-12 h-12 text-2xl rounded-2xl transition-all ${selectedMood === emoji
-                                    ? "bg-haru-sky-accent scale-110 shadow-soft"
-                                    : "bg-slate-50 dark:bg-slate-800 hover:bg-haru-sky-light"
-                                    }`}
+            {/* Step 1: Mood Mixing */}
+            {step === 1 && (
+                <div className="w-full max-w-md flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="relative mb-12 group">
+                        {/* The Pot (Visual Representation) */}
+                        <div
+                            className="w-48 h-48 rounded-[3.5rem] shadow-2xl transition-all duration-700 relative overflow-hidden flex items-center justify-center bg-slate-50 dark:bg-slate-900 border-4 border-white dark:border-slate-800"
+                            style={{ boxShadow: `0 20px 40px -10px ${mixedColor}40` }}
+                        >
+                            {/* Inner Liquid Effect */}
+                            <div
+                                className="absolute bottom-0 left-0 right-0 transition-all duration-500 flex flex-col-reverse"
+                                style={{ height: `${(totalSpoons / 10) * 100}%` }}
                             >
-                                {emoji}
+                                {Object.entries(moodCounts).map(([id, count]) => {
+                                    if (count === 0) return null;
+                                    const mood = MOODS.find(m => m.id === id)!;
+                                    return (
+                                        <div
+                                            key={id}
+                                            className="transition-all duration-500 relative"
+                                            style={{
+                                                backgroundColor: mood.color,
+                                                height: `${(count / totalSpoons) * 100}%`,
+                                                opacity: 0.8
+                                            }}
+                                        >
+                                            <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                            <div className="relative z-10 text-4xl transform group-hover:scale-110 transition-transform duration-500 select-none">🍯</div>
+                        </div>
+
+                        {/* Streak-like indicator */}
+                        <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-white dark:bg-slate-800 px-4 py-1.5 rounded-full shadow-lg border border-slate-100 dark:border-slate-700 flex items-center gap-2">
+                            <div className="flex gap-1">
+                                {[...Array(10)].map((_, i) => (
+                                    <div key={i} className={`w-1.5 h-3 rounded-full transition-colors ${i < totalSpoons ? 'bg-haru-sky-accent' : 'bg-slate-200 dark:bg-slate-700'}`}></div>
+                                ))}
+                            </div>
+                            <span className="text-[10px] font-bold text-slate-500">{totalSpoons}/10</span>
+                        </div>
+                    </div>
+
+                    <p className="text-center text-slate-500 dark:text-slate-400 text-sm font-medium mb-12 px-8 leading-relaxed">
+                        오늘 하루 느꼈던 감정들을<br />
+                        스푼으로 솥에 담아 자유롭게 섞어보세요.
+                    </p>
+
+                    <div className="grid grid-cols-5 gap-3 w-full mb-12">
+                        {MOODS.map(mood => (
+                            <button
+                                key={mood.id}
+                                onClick={() => addSpoon(mood.id)}
+                                className="flex flex-col items-center gap-2 group"
+                            >
+                                <div className="w-14 h-14 rounded-2xl bg-slate-50 dark:bg-slate-900 shadow-soft flex items-center justify-center text-2xl group-active:scale-90 transition-all hover:bg-white dark:hover:bg-slate-800 border border-transparent hover:border-slate-200 dark:hover:border-slate-700">
+                                    {mood.emoji}
+                                </div>
+                                <span className="text-[10px] font-bold text-slate-400">{mood.label}</span>
                             </button>
                         ))}
                     </div>
-                </div>
 
-                {/* 제목 */}
-                <div className="flex flex-col gap-2">
-                    <div className="flex items-center justify-between">
-                        <label className="text-sm font-semibold text-slate-500 dark:text-slate-400">제목</label>
+                    <div className="flex gap-4 w-full">
                         <button
-                            type="button"
-                            onClick={handleSuggestTitle}
-                            disabled={isSuggestingTitle || !content.trim()}
-                            className="flex items-center gap-1 text-[10px] font-bold px-2.5 py-1.5 bg-haru-sky-medium text-haru-sky-deep rounded-xl hover:bg-haru-sky-accent transition-colors disabled:opacity-40"
+                            onClick={resetPot}
+                            className="flex-1 py-4 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 font-bold text-sm flex items-center justify-center gap-2 hover:bg-slate-200 transition-colors"
                         >
-                            {isSuggestingTitle ? "✨ 생각 중..." : "✨ AI 제목 추천"}
+                            <RotateCcw size={16} /> 다시 담기
+                        </button>
+                        <button
+                            onClick={handleMix}
+                            className="flex-[2] py-4 rounded-2xl bg-haru-sky-deep text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all"
+                        >
+                            조합하기 <ArrowRight size={16} />
                         </button>
                     </div>
-                    <input
-                        type="text"
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        placeholder="오늘 하루는 어땠나요?"
-                        className="w-full p-4 bg-slate-50 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 rounded-2xl border-none focus:ring-2 focus:ring-haru-sky-accent outline-none text-lg font-medium"
-                    />
-                    {suggestedTitles.length > 0 && (
-                        <div className="flex flex-col gap-1.5">
-                            <p className="text-[10px] text-slate-400 font-bold">AI 추천 제목 — 클릭하면 선택돼요</p>
-                            {suggestedTitles.map((t, i) => (
-                                <button
-                                    key={i}
-                                    type="button"
-                                    onClick={() => { setTitle(t); setSuggestedTitles([]); }}
-                                    className="w-full text-left p-3 bg-haru-sky-light dark:bg-haru-sky-deep/20 rounded-xl text-sm font-medium text-haru-sky-deep dark:text-haru-sky-accent hover:bg-haru-sky-medium transition-colors"
-                                >
-                                    {i + 1}. {t}
-                                </button>
-                            ))}
+                </div>
+            )}
+
+            {/* Step 2: Result */}
+            {step === 2 && (
+                <div className="w-full max-w-md flex flex-col items-center animate-in zoom-in-95 fade-in duration-700">
+                    <div className="w-full aspect-[3/4] p-8 rounded-[2.5rem] shadow-2xl flex flex-col transition-all duration-1000 overflow-hidden relative mb-12" style={{ backgroundColor: mixedColor }}>
+                        {/* Overlay to make text readable if color is too light */}
+                        <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-black/10"></div>
+
+                        <div className="flex-1 flex flex-col justify-center items-center gap-4 relative z-10">
+                            <div className="w-20 h-20 bg-white/30 backdrop-blur-md rounded-full flex items-center justify-center text-4xl animate-bounce">✨</div>
+                            <h2 className="text-3xl font-black text-white drop-shadow-lg text-center leading-tight">
+                                {colorName}
+                            </h2>
                         </div>
-                    )}
-                </div>
 
-                {/* 카테고리 */}
-                <div className="flex flex-col gap-2">
-                    <label className="text-sm font-semibold text-slate-500 dark:text-slate-400">카테고리</label>
-                    <div className="flex gap-2">
-                        <select
-                            value={selectedCategoryId}
-                            onChange={(e) => setSelectedCategoryId(Number(e.target.value) || "")}
-                            className="flex-1 p-3 bg-slate-50 dark:bg-slate-800 dark:text-slate-200 rounded-xl border-none outline-none text-sm appearance-none"
-                        >
-                            <option value="">카테고리 선택</option>
-                            {categories.map((cat) => (
-                                <option key={cat.id} value={cat.id}>{cat.name}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div className="flex gap-2 mt-1">
-                        <input
-                            type="text"
-                            value={newCategoryName}
-                            onChange={(e) => setNewCategoryName(e.target.value)}
-                            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddCategory())}
-                            placeholder="새 카테고리"
-                            className="flex-1 p-2 bg-slate-50 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 rounded-xl border-none text-xs outline-none"
-                        />
-                        <button type="button" onClick={handleAddCategory} className="px-4 py-2 bg-haru-sky-medium text-haru-sky-deep font-bold rounded-xl text-xs hover:bg-haru-sky-accent transition-colors">추가</button>
-                        {selectedCategoryId && (
-                            <button type="button" onClick={() => handleDeleteCategory(Number(selectedCategoryId))} className="px-4 py-2 bg-red-50 text-red-400 font-bold rounded-xl text-xs hover:bg-red-100 transition-colors">삭제</button>
-                        )}
-                    </div>
-                </div>
-
-                {/* 내용 & 마이크 */}
-                <div className="flex flex-col gap-2 relative">
-                    <div className="flex justify-between items-center mb-1">
-                        <label className="text-sm font-semibold text-slate-500 dark:text-slate-400">내용</label>
-                        <span className="text-[10px] text-slate-400 font-mono select-none">{content.length} 자</span>
-                    </div>
-                    <div className="relative">
-                        <textarea
-                            value={content}
-                            onChange={(e) => setContent(e.target.value)}
-                            placeholder="자유롭게 이야기를 들려주세요..."
-                            rows={10}
-                            className="w-full p-4 bg-slate-50 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 rounded-2xl border-none focus:ring-2 focus:ring-haru-sky-accent outline-none resize-none"
-                        />
-                        {/* 실시간 인식 중인 텍스트 미리보기 */}
-                        {interimText && (
-                            <div className="absolute bottom-4 left-4 right-16 text-sm text-slate-400 italic bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm px-3 py-1.5 rounded-xl border border-haru-sky-accent/30">
-                                {interimText}...
+                        <div className="bg-white/90 backdrop-blur-sm p-6 rounded-3xl flex justify-between items-end relative z-10 shadow-lg">
+                            <div>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">HaruLog Mood Palette</p>
+                                <p className="text-lg font-mono font-bold text-slate-800">{mixedColor.toUpperCase()}</p>
                             </div>
-                        )}
+                            <div className="text-right">
+                                <p className="text-[10px] font-bold text-slate-400 mb-1">{selectedDate}</p>
+                                <p className="text-xs font-black text-haru-sky-deep">© 2026 HARULOG</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p className="text-center text-slate-500 text-sm font-medium mb-12 animate-pulse">
+                        이 예쁜 색상 위에 기록을 남겨볼까요?
+                    </p>
+
+                    <button
+                        onClick={() => setStep(3)}
+                        className="w-full py-5 rounded-2xl bg-slate-900 text-white font-bold text-lg shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all flex items-center justify-center gap-3"
+                    >
+                        기록 이어가기 <ArrowRight size={20} />
+                    </button>
+                    <button onClick={() => setStep(1)} className="mt-6 text-slate-400 text-xs font-bold hover:text-slate-600 transition-colors underline underline-offset-4">
+                        다시 만들고 싶어요
+                    </button>
+                </div>
+            )}
+
+            {/* Step 3: Writing */}
+            {step === 3 && (
+                <div className="w-full max-w-md flex flex-col gap-8 animate-in slide-in-from-right-8 fade-in duration-500">
+                    {/* Compact Mood Preview */}
+                    <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
+                        <div className="w-12 h-12 rounded-xl" style={{ backgroundColor: mixedColor }}></div>
+                        <div className="flex-1">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Today&apos;s Mood Color</p>
+                            <h3 className="text-sm font-bold text-foreground">{colorName}</h3>
+                        </div>
+                        <button onClick={() => setStep(2)} className="p-2 text-slate-300 hover:text-slate-500"><RotateCcw size={16} /></button>
+                    </div>
+
+                    <div className="flex flex-col gap-6">
+                        {/* Date */}
+                        <div>
+                            <label className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1 mb-2 block">Date</label>
+                            <input
+                                type="date"
+                                value={selectedDate}
+                                onChange={(e) => setSelectedDate(e.target.value)}
+                                className="w-full p-4 bg-slate-50 dark:bg-slate-900 dark:text-slate-200 rounded-2xl border-none focus:ring-2 focus:ring-haru-sky-accent outline-none font-bold"
+                            />
+                        </div>
+
+                        {/* Title Suggestions */}
+                        <div className="flex flex-col gap-2">
+                            <div className="flex justify-between items-center px-1">
+                                <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Title</label>
+                                <button
+                                    onClick={handleSuggestTitle}
+                                    disabled={isSuggestingTitle || !content.trim()}
+                                    className="text-[10px] font-bold text-haru-sky-deep bg-haru-sky-accent/20 px-2 py-1 rounded-lg flex items-center gap-1 hover:bg-haru-sky-accent transition-all disabled:opacity-30"
+                                >
+                                    <Sparkles size={12} /> AI 추천
+                                </button>
+                            </div>
+                            <input
+                                type="text"
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                                placeholder="오늘에게 이름을 붙여준다면?"
+                                className="w-full p-4 bg-slate-50 dark:bg-slate-900 dark:text-slate-200 rounded-2xl border-none focus:ring-2 focus:ring-haru-sky-accent outline-none text-lg font-bold"
+                            />
+                            {suggestedTitles.length > 0 && (
+                                <div className="flex flex-col gap-2 mt-2">
+                                    {suggestedTitles.map((t, i) => (
+                                        <button key={i} onClick={() => { setTitle(t); setSuggestedTitles([]); }} className="text-left p-3 bg-haru-sky-light dark:bg-haru-sky-deep/20 rounded-xl text-xs font-bold text-haru-sky-deep dark:text-haru-sky-accent hover:bg-haru-sky-medium transition-colors border border-haru-sky-accent/20">
+                                            {t}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex flex-col gap-2 relative">
+                            <div className="flex justify-between items-center px-1">
+                                <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Diary</label>
+                                <span className="text-[10px] font-mono text-slate-300">{content.length} characters</span>
+                            </div>
+                            <div className="relative">
+                                <textarea
+                                    value={content}
+                                    onChange={(e) => setContent(e.target.value)}
+                                    placeholder="무슨 일이 있었나요? 마음속 이야기를 편하게 들려주세요."
+                                    rows={12}
+                                    className="w-full p-5 bg-slate-50 dark:bg-slate-900 dark:text-slate-200 rounded-[2rem] border-none focus:ring-2 focus:ring-haru-sky-accent outline-none resize-none leading-relaxed text-sm font-medium"
+                                />
+                                {interimText && (
+                                    <div className="absolute bottom-6 left-6 right-16 p-3 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-2xl border border-haru-sky-accent/30 text-xs italic text-slate-400 animate-pulse">
+                                        {interimText}...
+                                    </div>
+                                )}
+                                <button
+                                    onClick={isRecording ? stopRecording : startRecording}
+                                    className={`absolute bottom-6 right-6 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all ${isRecording ? 'bg-rose-500 animate-pulse scale-110' : 'bg-slate-900 hover:bg-black'} text-white`}
+                                >
+                                    {isRecording ? <div className="w-4 h-4 bg-white rounded-sm" /> : <Mic size={24} />}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Submit */}
                         <button
-                            type="button"
-                            onClick={isRecording ? stopRecording : startRecording}
-                            disabled={!speechSupported}
-                            className={`absolute bottom-4 right-4 w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all ${isRecording
-                                ? "bg-red-500 animate-pulse scale-110"
-                                : "bg-haru-sky-deep hover:bg-haru-sky-accent"
-                                } text-white text-xl disabled:opacity-40`}
+                            onClick={handleSubmit}
+                            disabled={isSubmitting || isRecording}
+                            className="w-full py-5 rounded-[2rem] bg-haru-sky-deep text-white font-bold text-lg shadow-xl hover:shadow-2xl hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
                         >
-                            {isRecording ? "⏹️" : "🎤"}
+                            {isSubmitting ? "소중한 기록을 저장하는 중..." : <><Save size={20} /> 하루 저장하기</>}
                         </button>
                     </div>
-                    {isRecording && (
-                        <div className="flex items-center gap-2 text-xs text-red-400 font-medium animate-pulse mt-1">
-                            <span className="w-2 h-2 bg-red-400 rounded-full inline-block"></span>
-                            말씀하세요... 버튼을 다시 누르면 종료됩니다
-                        </div>
-                    )}
                 </div>
-
-                <button
-                    type="submit"
-                    disabled={isSubmitting || isRecording}
-                    className="mt-4 w-full p-5 bg-haru-sky-accent text-foreground font-bold rounded-2xl shadow-soft hover:shadow-lg active:scale-[0.98] transition-all disabled:opacity-50"
-                >
-                    {isSubmitting ? "저장 중..." : isRecording ? "녹음을 먼저 종료해주세요" : "일기 작성 완료 ✨"}
-                </button>
-            </form>
-
-            <footer className="mt-8 text-center text-slate-300 text-xs py-8">
-                말로 하셔도 괜찮아요, 제가 다 들어드릴게요.
-            </footer>
+            )}
         </div>
     );
 }
 
 export default function DiaryWrite() {
     return (
-        <Suspense fallback={<div className="p-6 text-center text-slate-400">Loading...</div>}>
+        <Suspense fallback={<div className="p-12 text-center text-slate-400 font-bold animate-pulse">Loading... ✨</div>}>
             <DiaryWriteInner />
         </Suspense>
     );

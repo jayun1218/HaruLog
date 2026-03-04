@@ -17,6 +17,9 @@ interface Diary {
     content: string;
     created_at: string;
     mood?: string;
+    color_code?: string;
+    color_name?: string;
+    mood_counts?: Record<string, number>;
     is_pinned?: boolean;
     is_locked?: boolean;
     image_url?: string;
@@ -196,9 +199,8 @@ export default function DiaryList() {
                                 const isSelected = dateKey === selectedDate;
                                 const d0 = diaryMap[dateKey]?.[0];
                                 const emoji = d0?.mood || (d0?.analysis ? getTopEmotionEmoji(d0.analysis.emotions) : null);
-                                const heatColor = !isSelected && !isToday && d0?.analysis
-                                    ? getEmotionHeatColor(d0.analysis.emotions, d0.mood)
-                                    : null;
+                                const customColor = d0?.color_code;
+
                                 return (
                                     <button key={day} onClick={() => {
                                         if (hasDiary) {
@@ -208,9 +210,16 @@ export default function DiaryList() {
                                             router.push(`/diary/write?date=${dateKey}`);
                                         }
                                     }}
-                                        className={`flex flex-col items-center justify-start py-1.5 rounded-2xl transition-all ${isSelected ? "bg-haru-sky-accent scale-105 shadow-soft" : isToday ? "bg-haru-sky-light dark:bg-haru-sky-deep/20" : heatColor ? `${heatColor} hover:brightness-95` : hasDiary ? "hover:bg-haru-sky-light dark:hover:bg-slate-700" : "hover:bg-slate-50 dark:hover:bg-slate-800/50"}`}>
+                                        className={`flex flex-col items-center justify-start py-1.5 rounded-2xl transition-all ${isSelected ? "bg-haru-sky-accent scale-105 shadow-soft" : isToday ? "bg-haru-sky-light dark:bg-haru-sky-deep/20" : "hover:bg-slate-50 dark:hover:bg-slate-800/50"}`}
+                                        style={(!isSelected && !isToday && customColor) ? { backgroundColor: `${customColor}33` } : {}}
+                                    >
                                         <span className={`text-sm font-semibold leading-tight ${isToday ? "text-haru-sky-deep dark:text-haru-sky-accent" : "text-slate-700 dark:text-slate-300"}`}>{day}</span>
-                                        {emoji ? <span className="text-base leading-none mt-0.5">{emoji}</span> : (
+                                        {emoji ? (
+                                            <div className="flex flex-col items-center">
+                                                <span className="text-base leading-none mt-0.5">{emoji}</span>
+                                                {customColor && <div className="w-1 h-1 rounded-full mt-0.5" style={{ backgroundColor: customColor }}></div>}
+                                            </div>
+                                        ) : (
                                             <span className="h-5 mt-0.5 text-[10px] text-slate-200 dark:text-slate-700 group-hover:text-haru-sky-accent">+</span>
                                         )}
                                     </button>
@@ -334,13 +343,24 @@ function DiaryCard({ diary, expandedId, setExpandedId, onPin, onRefresh }: {
                 <div className="flex justify-between items-start gap-2">
                     <div className="flex flex-col gap-1 flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                            {diary.mood && <span className="text-xl">{diary.mood}</span>}
+                            {diary.color_code ? (
+                                <div className="w-6 h-6 rounded-lg shadow-sm shrink-0 flex items-center justify-center text-xs" style={{ backgroundColor: diary.color_code }}>
+                                    {diary.mood}
+                                </div>
+                            ) : (
+                                diary.mood && <span className="text-xl">{diary.mood}</span>
+                            )}
                             <h2 className="text-base font-bold text-foreground truncate">{diary.title}</h2>
                             {diary.is_pinned && <span className="text-yellow-400 text-sm flex-shrink-0">📌</span>}
                         </div>
-                        {diary.category && (
-                            <span className="text-xs text-haru-sky-deep bg-haru-sky-light px-2 py-0.5 rounded-full w-fit">📁 {diary.category.name}</span>
-                        )}
+                        <div className="flex gap-2 items-center">
+                            {diary.category && (
+                                <span className="text-[10px] text-haru-sky-deep bg-haru-sky-light px-2 py-0.5 rounded-lg w-fit font-bold">📁 {diary.category.name}</span>
+                            )}
+                            {diary.color_name && (
+                                <span className="text-[10px] font-bold text-slate-400">🎨 {diary.color_name}</span>
+                            )}
+                        </div>
                     </div>
                     <div className="flex items-center gap-1 flex-shrink-0">
                         <button onClick={e => onPin(diary.id, e)} className={`w-8 h-8 rounded-full flex items-center justify-center text-sm transition-colors ${diary.is_pinned ? "bg-yellow-100 text-yellow-500" : "bg-slate-50 text-slate-300 hover:bg-yellow-50 hover:text-yellow-400"}`}>📌</button>

@@ -146,6 +146,9 @@ def create_diary(diary: schemas.DiaryCreate, db: Session = Depends(get_db), user
         content=diary.content,
         category_id=diary.category_id,
         mood=diary.mood,
+        mood_counts=diary.mood_counts,
+        color_code=diary.color_code,
+        color_name=diary.color_name,
         user_id=user_id
     )
     if custom_dt:

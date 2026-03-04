@@ -16,6 +16,9 @@ Base.metadata.create_all(bind=engine)
 def run_migrations():
     migrations = [
         "ALTER TABLE diaries ADD COLUMN IF NOT EXISTS mood VARCHAR",
+        "ALTER TABLE diaries ADD COLUMN IF NOT EXISTS mood_counts JSON",
+        "ALTER TABLE diaries ADD COLUMN IF NOT EXISTS color_code VARCHAR",
+        "ALTER TABLE diaries ADD COLUMN IF NOT EXISTS color_name VARCHAR",
         "ALTER TABLE diaries ADD COLUMN IF NOT EXISTS is_pinned BOOLEAN DEFAULT FALSE",
         "ALTER TABLE diaries ADD COLUMN IF NOT EXISTS image_url VARCHAR",
         "ALTER TABLE diaries ADD COLUMN IF NOT EXISTS is_locked BOOLEAN DEFAULT FALSE",

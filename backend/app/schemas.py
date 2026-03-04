@@ -39,6 +39,9 @@ class DiaryBase(BaseModel):
     content: str
     category_id: Optional[int] = None
     mood: Optional[str] = None          # 전송할 이모지 기분 태그
+    mood_counts: Optional[Dict[str, int]] = None
+    color_code: Optional[str] = None
+    color_name: Optional[str] = None
 
 class DiaryCreate(DiaryBase):
     date: Optional[str] = None

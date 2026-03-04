@@ -33,6 +33,9 @@ class Diary(Base):
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
     raw_audio_url = Column(String, nullable=True)
     mood = Column(String, nullable=True)      # 사용자 선택 기분 이모지 (ex: "😊")
+    mood_counts = Column(JSON, nullable=True) # 감정 스푼 수 (ex: {"joy": 3, "sadness": 1})
+    color_code = Column(String, nullable=True) # 조합된 색상 코드 (ex: "#FCD34D")
+    color_name = Column(String, nullable=True) # 생성된 감성 색상 이름
     is_pinned = Column(Boolean, default=False)  # 즐겨찾기
     image_url = Column(String, nullable=True)    # 첨부 이미지
     is_locked = Column(Boolean, default=False)   # 잠금 여부
