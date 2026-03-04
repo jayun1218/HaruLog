@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "@/components/Toast";
 import { Sparkles, Image as ImageIcon, Lock, Unlock, Pin, ChevronUp, ChevronDown, Camera } from "lucide-react";
+import ShareCard from "@/components/ShareCard";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -40,6 +41,25 @@ function getTopEmotionEmoji(emotions?: Record<string, number>): string {
     };
     const top = Object.entries(emotions).sort((a, b) => b[1] - a[1])[0];
     return top ? (map[top[0]] || "💙") : "📔";
+}
+
+function getEmotionHeatColor(emotions?: Record<string, number>, mood?: string): string | null {
+    if (mood) return null; // 이모지 기분이 있으면 색상 생략
+    if (!emotions) return null;
+    const colorMap: Record<string, string> = {
+        "기쁨": "bg-yellow-100 dark:bg-yellow-900/30",
+        "joy": "bg-yellow-100 dark:bg-yellow-900/30",
+        "슬픔": "bg-blue-100 dark:bg-blue-900/30",
+        "sadness": "bg-blue-100 dark:bg-blue-900/30",
+        "분노": "bg-red-100 dark:bg-red-900/30",
+        "anger": "bg-red-100 dark:bg-red-900/30",
+        "불안": "bg-orange-100 dark:bg-orange-900/30",
+        "anxiety": "bg-orange-100 dark:bg-orange-900/30",
+        "평온": "bg-green-100 dark:bg-green-900/30",
+        "calm": "bg-green-100 dark:bg-green-900/30",
+    };
+    const top = Object.entries(emotions).sort((a, b) => b[1] - a[1])[0];
+    return top ? (colorMap[top[0]] ?? null) : null;
 }
 
 export default function DiaryList() {
@@ -176,17 +196,19 @@ export default function DiaryList() {
                                 const isSelected = dateKey === selectedDate;
                                 const d0 = diaryMap[dateKey]?.[0];
                                 const emoji = d0?.mood || (d0?.analysis ? getTopEmotionEmoji(d0.analysis.emotions) : null);
+                                const heatColor = !isSelected && !isToday && d0?.analysis
+                                    ? getEmotionHeatColor(d0.analysis.emotions, d0.mood)
+                                    : null;
                                 return (
                                     <button key={day} onClick={() => {
                                         if (hasDiary) {
                                             setSelectedDate(isSelected ? null : dateKey);
                                             setExpandedId(null);
                                         } else {
-                                            // 일기 없는 날 클릭 시 해당 날짜로 쓰기 페이지 이동
                                             router.push(`/diary/write?date=${dateKey}`);
                                         }
                                     }}
-                                        className={`flex flex-col items-center justify-start py-1.5 rounded-2xl transition-all ${isSelected ? "bg-haru-sky-accent scale-105 shadow-soft" : isToday ? "bg-haru-sky-light dark:bg-haru-sky-deep/20" : hasDiary ? "hover:bg-haru-sky-light dark:hover:bg-slate-700" : "hover:bg-slate-50 dark:hover:bg-slate-800/50"}`}>
+                                        className={`flex flex-col items-center justify-start py-1.5 rounded-2xl transition-all ${isSelected ? "bg-haru-sky-accent scale-105 shadow-soft" : isToday ? "bg-haru-sky-light dark:bg-haru-sky-deep/20" : heatColor ? `${heatColor} hover:brightness-95` : hasDiary ? "hover:bg-haru-sky-light dark:hover:bg-slate-700" : "hover:bg-slate-50 dark:hover:bg-slate-800/50"}`}>
                                         <span className={`text-sm font-semibold leading-tight ${isToday ? "text-haru-sky-deep dark:text-haru-sky-accent" : "text-slate-700 dark:text-slate-300"}`}>{day}</span>
                                         {emoji ? <span className="text-base leading-none mt-0.5">{emoji}</span> : (
                                             <span className="h-5 mt-0.5 text-[10px] text-slate-200 dark:text-slate-700 group-hover:text-haru-sky-accent">+</span>
@@ -243,6 +265,7 @@ function DiaryCard({ diary, expandedId, setExpandedId, onPin, onRefresh }: {
     const [showUnlock, setShowUnlock] = useState(false);
     const [pinInput, setPinInput] = useState("");
     const [unlocked, setUnlocked] = useState(!diary.is_locked);
+    const [showShareCard, setShowShareCard] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleLock = async () => {
@@ -388,8 +411,14 @@ function DiaryCard({ diary, expandedId, setExpandedId, onPin, onRefresh }: {
                         <button onClick={handleLock} className="flex items-center gap-1 text-xs px-3 py-2 bg-slate-100 dark:bg-slate-700 dark:text-slate-300 text-slate-500 font-bold rounded-xl hover:bg-red-50 hover:text-red-400 transition-colors">
                             🔒 잠금
                         </button>
+                        <button onClick={() => setShowShareCard(true)} className="flex items-center gap-1 text-xs px-3 py-2 bg-slate-100 dark:bg-slate-700 dark:text-slate-300 text-slate-500 font-bold rounded-xl hover:bg-sky-50 hover:text-sky-500 transition-colors">
+                            📤 공유 카드
+                        </button>
                         <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
                     </div>
+                    {showShareCard && (
+                        <ShareCard diary={diary} onClose={() => setShowShareCard(false)} />
+                    )}
                 </div>
             )}
         </div>

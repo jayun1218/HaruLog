@@ -365,6 +365,36 @@ async def text_to_speech(body: schemas.TTSRequest):
         print(f"TTS Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.post("/suggest-title")
+async def suggest_title(body: dict, user_id: int = Depends(get_current_user_id)):
+    """일기 내용을 바탕으로 AI 제목 3개를 추천합니다."""
+    current_client = get_openai_client()
+    content = body.get("content", "")
+    if not content.strip():
+        raise HTTPException(status_code=400, detail="내용이 없습니다.")
+    if not current_client:
+        return {"titles": ["오늘의 이야기", "나의 하루", "소중한 순간"]}
+    
+    try:
+        response = current_client.chat.completions.create(
+            model="gpt-4o",
+            messages=[{
+                "role": "user",
+                "content": (
+                    f"아래 일기 내용을 읽고, 어울리는 감성적이고 짧은 제목 3개를 추천해줘.\n"
+                    f"JSON 형식으로: {{\"titles\": [\"제목1\", \"제목2\", \"제목3\"]}}\n"
+                    f"각 제목은 15자 이내. 반드시 한국어.\n\n일기 내용:\n{content[:1000]}"
+                )
+            }],
+            response_format={"type": "json_object"},
+            max_tokens=200,
+        )
+        import json as _json
+        result = _json.loads(response.choices[0].message.content)
+        return {"titles": result.get("titles", ["오늘의 기록"])}
+    except Exception as e:
+        return {"titles": ["오늘의 이야기", "나의 하루", "소중한 순간"]}
+
 @router.post("/tarot-image")
 async def generate_tarot_image(body: dict, db: Session = Depends(get_db), user_id: int = Depends(get_current_user_id)):
     """DALL-E 3로 타로 카드 이미지를 생성합니다."""

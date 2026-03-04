@@ -70,9 +70,27 @@ export default function Home() {
           <div className="w-28 h-28 bg-white dark:bg-slate-900 rounded-[3rem] flex items-center justify-center text-5xl shadow-soft animate-float border-4 border-haru-sky-accent/20">
             ☁️
           </div>
-          <div className="absolute -top-3 -right-3 bg-haru-sky-accent text-haru-sky-deep text-[10px] font-black px-3 py-1.5 rounded-full shadow-lg border-2 border-white dark:border-slate-800 transform group-hover:scale-110 transition-transform">
-            {streak}일 기록 중
-          </div>
+          {/* 스트릭 뱃지 */}
+          {(() => {
+            const badges = [
+              { min: 0, max: 2, icon: "🌱", name: "새싹", next: 3 },
+              { min: 3, max: 6, icon: "🔥", name: "불꽃", next: 7 },
+              { min: 7, max: 29, icon: "⭐", name: "별", next: 30 },
+              { min: 30, max: Infinity, icon: "👑", name: "왕관", next: null },
+            ];
+            const badge = badges.find(b => streak >= b.min && streak <= b.max) ?? badges[0];
+            return (
+              <div className="absolute -top-3 -right-3 flex flex-col items-end gap-0.5">
+                <div className={`bg-haru-sky-accent text-haru-sky-deep text-[10px] font-black px-3 py-1.5 rounded-full shadow-lg border-2 border-white dark:border-slate-800 transform group-hover:scale-110 transition-transform flex items-center gap-1`}>
+                  <span>{badge.icon}</span>
+                  <span>{streak}일 연속</span>
+                </div>
+                <span className="text-[9px] font-bold text-slate-400 pr-1">
+                  {badge.next ? `${badge.name} · 다음까지 ${badge.next - streak}일` : `${badge.name} · 최고 등급! 🎉`}
+                </span>
+              </div>
+            );
+          })()}
         </div>
         <div className="flex flex-col gap-1.5">
           <h1 className="text-4xl font-black bg-gradient-to-br from-slate-900 via-slate-700 to-slate-400 dark:from-white dark:via-slate-200 dark:to-slate-500 bg-clip-text text-transparent tracking-tighter">

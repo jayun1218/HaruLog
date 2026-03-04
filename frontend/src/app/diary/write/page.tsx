@@ -21,6 +21,8 @@ function DiaryWriteInner() {
     const [isRecording, setIsRecording] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [speechSupported, setSpeechSupported] = useState(true);
+    const [suggestedTitles, setSuggestedTitles] = useState<string[]>([]);
+    const [isSuggestingTitle, setIsSuggestingTitle] = useState(false);
     const getLocalToday = () => {
         const now = new Date();
         return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -174,6 +176,25 @@ function DiaryWriteInner() {
         setInterimText("");
     };
 
+    const handleSuggestTitle = async () => {
+        if (!content.trim()) { toast("내용을 먼저 입력해주세요!", "info"); return; }
+        setIsSuggestingTitle(true);
+        setSuggestedTitles([]);
+        try {
+            const res = await fetch(`${API}/api/suggest-title`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ content }),
+            });
+            const data = await res.json();
+            setSuggestedTitles(data.titles || []);
+        } catch {
+            toast("제목 추천 중 오류가 발생했어요.", "error");
+        } finally {
+            setIsSuggestingTitle(false);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!title || !content) {
@@ -247,7 +268,17 @@ function DiaryWriteInner() {
 
                 {/* 제목 */}
                 <div className="flex flex-col gap-2">
-                    <label className="text-sm font-semibold text-slate-500 dark:text-slate-400">제목</label>
+                    <div className="flex items-center justify-between">
+                        <label className="text-sm font-semibold text-slate-500 dark:text-slate-400">제목</label>
+                        <button
+                            type="button"
+                            onClick={handleSuggestTitle}
+                            disabled={isSuggestingTitle || !content.trim()}
+                            className="flex items-center gap-1 text-[10px] font-bold px-2.5 py-1.5 bg-haru-sky-medium text-haru-sky-deep rounded-xl hover:bg-haru-sky-accent transition-colors disabled:opacity-40"
+                        >
+                            {isSuggestingTitle ? "✨ 생각 중..." : "✨ AI 제목 추천"}
+                        </button>
+                    </div>
                     <input
                         type="text"
                         value={title}
@@ -255,6 +286,21 @@ function DiaryWriteInner() {
                         placeholder="오늘 하루는 어땠나요?"
                         className="w-full p-4 bg-slate-50 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 rounded-2xl border-none focus:ring-2 focus:ring-haru-sky-accent outline-none text-lg font-medium"
                     />
+                    {suggestedTitles.length > 0 && (
+                        <div className="flex flex-col gap-1.5">
+                            <p className="text-[10px] text-slate-400 font-bold">AI 추천 제목 — 클릭하면 선택돼요</p>
+                            {suggestedTitles.map((t, i) => (
+                                <button
+                                    key={i}
+                                    type="button"
+                                    onClick={() => { setTitle(t); setSuggestedTitles([]); }}
+                                    className="w-full text-left p-3 bg-haru-sky-light dark:bg-haru-sky-deep/20 rounded-xl text-sm font-medium text-haru-sky-deep dark:text-haru-sky-accent hover:bg-haru-sky-medium transition-colors"
+                                >
+                                    {i + 1}. {t}
+                                </button>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 {/* 카테고리 */}
