@@ -11,8 +11,20 @@ export default function FortuneTeller() {
     const [isNoteVisible, setIsNoteVisible] = useState(false);
     const [isNoteOpen, setIsNoteOpen] = useState(false);
     const [fortuneResult, setFortuneResult] = useState("");
+    const [archive, setArchive] = useState<any[]>([]);
+    const [viewMode, setViewMode] = useState<"main" | "archive">("main");
 
     const scrollRef = useRef<HTMLDivElement>(null);
+
+    const fetchArchive = () => {
+        fetch(`${API}/api/ai-chat/archive`)
+            .then(res => res.json())
+            .then(data => {
+                const fortuneArchive = data.filter((item: any) => item.fortune);
+                setArchive(fortuneArchive);
+            })
+            .catch(() => { });
+    };
 
     useEffect(() => {
         if (isOpen) {
@@ -79,41 +91,79 @@ export default function FortuneTeller() {
                                     <p className="text-[10px] text-green-500 font-bold uppercase tracking-widest">Daily Fortune</p>
                                 </div>
                             </div>
-                            <button onClick={() => setIsOpen(false)} className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400">✕</button>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => {
+                                        if (viewMode === "main") {
+                                            fetchArchive();
+                                            setViewMode("archive");
+                                        } else {
+                                            setViewMode("main");
+                                        }
+                                    }}
+                                    className="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-[10px] font-bold text-slate-500 hover:bg-green-50 hover:text-green-600 transition-colors"
+                                >
+                                    {viewMode === "main" ? "나의 기록" : "돌아가기"}
+                                </button>
+                                <button onClick={() => { setIsOpen(false); setViewMode("main"); }} className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400">✕</button>
+                            </div>
                         </header>
 
-                        <div className="flex-1 overflow-y-auto p-8 flex flex-col items-center justify-center gap-8 bg-slate-50/30 dark:bg-slate-900/30">
-                            {!isNoteVisible ? (
-                                <button
-                                    onClick={() => setIsNoteVisible(true)}
-                                    className="w-32 h-32 bg-green-50 dark:bg-green-900/20 rounded-[3rem] flex items-center justify-center text-7xl shadow-xl hover:scale-110 active:scale-95 transition-all border-4 border-green-200 dark:border-green-800"
-                                >
-                                    🍀
-                                </button>
-                            ) : (
-                                <div className="flex flex-col items-center gap-6 animate-in fade-in zoom-in duration-500 w-full">
-                                    <div
-                                        onClick={() => {
-                                            if (!isNoteOpen && !isLoading) {
-                                                setIsNoteOpen(true);
-                                                handleGetFortune();
-                                            }
-                                        }}
-                                        className={`w-40 h-28 bg-amber-50 rounded-lg shadow-xl flex items-center justify-center text-4xl cursor-pointer transition-all duration-700 relative overflow-hidden ${isNoteOpen ? "scale-110 rotate-3 shadow-2xl" : "hover:rotate-2 hover:scale-105"}`}
-                                    >
-                                        {isNoteOpen ? "📜" : "✉️"}
-                                        <div className="absolute top-0 right-0 w-8 h-8 bg-amber-100/50 rounded-bl-full"></div>
-                                    </div>
-                                    {isLoading && <p className="text-green-500 font-bold animate-pulse text-sm">신비로운 운세를 불러오는 중...</p>}
-                                    {fortuneResult && (
-                                        <div className="p-6 bg-white dark:bg-slate-800 rounded-3xl shadow-lg border-2 border-green-100 dark:border-green-900/50 text-slate-600 dark:text-slate-300 text-sm leading-relaxed text-center animate-in slide-in-from-bottom duration-700 w-full">
-                                            <div className="text-xl mb-2">✨</div>
-                                            <div className="whitespace-pre-wrap">{fortuneResult}</div>
+                        <div className="flex-1 overflow-y-auto p-8 bg-slate-50/30 dark:bg-slate-900/30">
+                            {viewMode === "main" ? (
+                                <div className="flex flex-col items-center justify-center min-h-full gap-8">
+                                    {!isNoteVisible ? (
+                                        <button
+                                            onClick={() => setIsNoteVisible(true)}
+                                            className="w-32 h-32 bg-green-50 dark:bg-green-900/20 rounded-[3rem] flex items-center justify-center text-7xl shadow-xl hover:scale-110 active:scale-95 transition-all border-4 border-green-200 dark:border-green-800"
+                                        >
+                                            🍀
+                                        </button>
+                                    ) : (
+                                        <div className="flex flex-col items-center gap-6 animate-in fade-in zoom-in duration-500 w-full">
+                                            <div
+                                                onClick={() => {
+                                                    if (!isNoteOpen && !isLoading) {
+                                                        setIsNoteOpen(true);
+                                                        handleGetFortune();
+                                                    }
+                                                }}
+                                                className={`w-40 h-28 bg-amber-50 rounded-lg shadow-xl flex items-center justify-center text-4xl cursor-pointer transition-all duration-700 relative overflow-hidden ${isNoteOpen ? "scale-110 rotate-3 shadow-2xl" : "hover:rotate-2 hover:scale-105"}`}
+                                            >
+                                                {isNoteOpen ? "📜" : "✉️"}
+                                                <div className="absolute top-0 right-0 w-8 h-8 bg-amber-100/50 rounded-bl-full"></div>
+                                            </div>
+                                            {isLoading && <p className="text-green-500 font-bold animate-pulse text-sm">신비로운 운세를 불러오는 중...</p>}
+                                            {fortuneResult && (
+                                                <div className="p-6 bg-white dark:bg-slate-800 rounded-3xl shadow-lg border-2 border-green-100 dark:border-green-900/50 text-slate-600 dark:text-slate-300 text-sm leading-relaxed text-center animate-in slide-in-from-bottom duration-700 w-full">
+                                                    <div className="text-xl mb-2">✨</div>
+                                                    <div className="whitespace-pre-wrap">{fortuneResult}</div>
+                                                </div>
+                                            )}
                                         </div>
+                                    )}
+                                    {!isNoteVisible && <p className="text-slate-400 text-sm text-center">오늘의 행운을 불러오는 클로버를 눌러보세요!</p>}
+                                </div>
+                            ) : (
+                                <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-right duration-500">
+                                    <h4 className="font-bold text-slate-600 dark:text-slate-400 text-sm mb-2 px-2">과거 운세 기록</h4>
+                                    {archive.length === 0 ? (
+                                        <div className="py-20 text-center text-slate-400 text-sm">아직 저장된 기록이 없어요.</div>
+                                    ) : (
+                                        archive.map((item, idx) => (
+                                            <div key={idx} className="p-5 bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col gap-3">
+                                                <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-700/50 pb-2">
+                                                    <span className="text-xs font-black text-green-500 bg-green-50 dark:bg-green-900/20 px-3 py-1 rounded-full">{item.date}</span>
+                                                    <span className="text-lg">📜</span>
+                                                </div>
+                                                <div className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed whitespace-pre-wrap">
+                                                    {item.fortune}
+                                                </div>
+                                            </div>
+                                        ))
                                     )}
                                 </div>
                             )}
-                            {!isNoteVisible && <p className="text-slate-400 text-sm text-center">오늘의 행운을 불러오는 클로버를 눌러보세요!</p>}
                         </div>
                     </div>
                 </div>

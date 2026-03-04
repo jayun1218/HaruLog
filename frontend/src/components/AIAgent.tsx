@@ -19,7 +19,12 @@ export default function AIAgent() {
             fetch(`${API}/api/ai-chat/${today}`)
                 .then(res => res.json())
                 .then(data => {
-                    if (data.messages) setMessages(data.messages);
+                    if (data.messages && data.messages.length > 0) {
+                        setMessages(data.messages);
+                    } else {
+                        // 대화가 비어있는 경우, 첫 인사 유도 (숨겨진 메시지 전송)
+                        handleSendMessage("안녕, 구름아! ✨", true);
+                    }
                 })
                 .catch(() => { });
         }
@@ -31,11 +36,11 @@ export default function AIAgent() {
         }
     }, [messages]);
 
-    const handleSendMessage = async (text?: string) => {
+    const handleSendMessage = async (text?: string, isHidden: boolean = false) => {
         const messageText = text || input;
         if (!messageText.trim() || isLoading) return;
 
-        if (!text) {
+        if (!isHidden) {
             const userMsg = { role: "user", content: messageText };
             setMessages(prev => [...prev, userMsg]);
             setInput("");

@@ -93,6 +93,19 @@ class AIChatResponse(BaseModel):
     fortune: Optional[str] = None
     tarot: Optional[str] = None
     selected_card: Optional[int] = None
+    mood: Optional[str] = "NORMAL"  # 추가: 에이전트의 현재 감정 상태
+
+    class Config:
+        from_attributes = True
+
+class TTSRequest(BaseModel):
+    text: str
+
+class AIChatArchiveResponse(BaseModel):
+    date: str
+    fortune: Optional[str] = None
+    tarot: Optional[str] = None
+    selected_card: Optional[int] = None
 
     class Config:
         from_attributes = True

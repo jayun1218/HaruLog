@@ -346,6 +346,34 @@ def unlock_diary(diary_id: int, body: LockRequest, db: Session = Depends(get_db)
     return {"is_locked": False}
 
 # --- AI Agent Chat API ---
+@router.post("/tts")
+async def text_to_speech(body: schemas.TTSRequest):
+    current_client = get_openai_client()
+    if not current_client:
+        raise HTTPException(status_code=500, detail="OpenAI API key not configured")
+    
+    try:
+        response = current_client.audio.speech.create(
+            model="tts-1",
+            voice="alloy", # 따뜻한 목소리
+            input=body.text
+        )
+        # 바이너리 데이터를 직접 반환 (프론트에서 활용)
+        from fastapi.responses import Response
+        return Response(content=response.content, media_type="audio/mpeg")
+    except Exception as e:
+        print(f"TTS Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/ai-chat/archive", response_model=List[schemas.AIChatArchiveResponse])
+def get_ai_chat_archive(db: Session = Depends(get_db), user_id: int = Depends(get_current_user_id)):
+    # 운세나 타로 기록이 있는 페이지만 날짜 역순으로 조회
+    chats = db.query(models.AIChat).filter(
+        models.AIChat.user_id == user_id,
+        (models.AIChat.fortune != None) | (models.AIChat.tarot != None)
+    ).order_by(models.AIChat.date.desc()).all()
+    return chats
+
 @router.post("/ai-chat", response_model=schemas.AIChatResponse)
 def post_ai_chat(body: schemas.AIChatCreate, db: Session = Depends(get_db), user_id: int = Depends(get_current_user_id)):
     from datetime import date
@@ -367,6 +395,24 @@ def post_ai_chat(body: schemas.AIChatCreate, db: Session = Depends(get_db), user
     current_messages.append({"role": "user", "content": body.message})
     
     current_client = get_openai_client()
+    
+    # 2. 오늘의 일기 데이터가 있다면 컨텍스트로 추가 (프롬프트 보강)
+    diary = db.query(models.Diary).filter(
+        models.Diary.user_id == user_id,
+        models.Diary.created_at >= today + " 00:00:00",
+        models.Diary.created_at <= today + " 23:59:59"
+    ).first()
+    
+    diary_context = ""
+    if diary and diary.analysis:
+        try:
+            # db.query로 가져온 analysis는 이미 모델 인스턴스일 수 있으므로 처리
+            summary = diary.analysis.summary if hasattr(diary.analysis, 'summary') else ""
+            if summary:
+                diary_context = f"\n\n[참고: 오늘 사용자의 일기 요약: '{summary}']\n이 내용을 바탕으로 사용자에게 오늘 하루 고생했다는 공감이나 관련 언급을 자연스럽게 섞어서 다정하게 대화해줘."
+        except Exception as e:
+            print(f"Diary context error: {e}")
+
     if not current_client:
         # API 키가 없는 경우 더미 응답
         reply = "안녕하세요! 지금은 테스트 모드예요. OpenAI API 키를 설정하면 더 똑똑한 대화와 운세, 타로를 봐드릴 수 있어요! ✨"
@@ -382,13 +428,15 @@ def post_ai_chat(body: schemas.AIChatCreate, db: Session = Depends(get_db), user
                 "너는 'HaruLog'라는 일기 앱의 마스코트인 따뜻한 구름 AI야. "
                 "사용자의 일상 대화, 고민 상담뿐만 아니라 오늘의 운세나 타로 점을 봐주기도 해. "
                 "항상 친절하고 다정하며, 이모지를 적절히 사용하여 귀엽게 말해줘.\n\n"
-                "1. 일상 대화: 사용자의 말에 공감하고 따뜻한 위로를 건네줘.\n"
+                "1. 일상 대화: 사용자의 말에 공감하고 따뜻한 위로를 건네줘." + diary_context + "\n"
                 "2. 오늘의 운세: 반드시 아래 형식을 지키고 각 항목 뒤에 줄바꿈(\n)을 넣어줘. '물론이지' 같은 서두는 절대 금지야.\n"
                 "오늘의 운세 쪽지\n"
                 "행운의 컬러 : [컬러]\n"
                 "행운의 장소 : [장소]\n"
                 "오늘의 메시지 : [메시지]\n"
                 "3. 타로 점보기: 선택한 카드의 의미와 조언을 신비롭고 명확하게 전달하며, 가독성을 위해 줄바꿈을 자주 사용해줘.\n\n"
+                "**[중요] 응답 형식**: 반드시 JSON 형식으로 답해줘. 필드는 'reply' (답변 내용)와 'mood' (현재 감정 상태) 두 가지야.\n"
+                "감정 상태(mood)는 다음 중 하나만 선택해: NORMAL, HAPPY, SAD, COOL, THINKING.\n"
                 "진심을 담아 따뜻하게 답변하고, 반드시 한국어로만 답해."
             )
         }
@@ -396,10 +444,14 @@ def post_ai_chat(body: schemas.AIChatCreate, db: Session = Depends(get_db), user
         response = current_client.chat.completions.create(
             model="gpt-4o",
             messages=[system_msg] + current_messages[-10:], # 최근 10개 메시지만 문맥으로 전달
-            max_tokens=600
+            response_format={ "type": "json_object" },
+            max_tokens=800
         )
         
-        reply = response.choices[0].message.content
+        result = json.loads(response.choices[0].message.content)
+        reply = result.get("reply", "")
+        chat.mood = result.get("mood", "NORMAL")
+        
         current_messages.append({"role": "assistant", "content": reply})
         chat.messages = current_messages
         
