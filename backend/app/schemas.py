@@ -92,6 +92,7 @@ class AIChatResponse(BaseModel):
     date: str
     fortune: Optional[str] = None
     tarot: Optional[str] = None
+    selected_card: Optional[int] = None
 
     class Config:
         from_attributes = True

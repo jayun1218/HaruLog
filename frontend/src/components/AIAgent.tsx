@@ -39,7 +39,9 @@ export default function AIAgent() {
                     }
                     if (data.tarot) {
                         setTarotResult(data.tarot);
-                        setSelectedCard(1); // 타로 결과가 있으면 임의로 1번 카드 선택 상태로 복구
+                        if (data.selected_card) {
+                            setSelectedCard(data.selected_card);
+                        }
                     }
                 })
                 .catch(() => { });
@@ -152,16 +154,36 @@ export default function AIAgent() {
                                             <p className="text-slate-400 text-sm">무엇이든 물어보세요! 따뜻하게 들어드릴게요. ✨</p>
                                         </div>
                                     )}
-                                    {messages.map((msg, i) => (
-                                        <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                                            <div className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed ${msg.role === "user"
-                                                ? "bg-haru-sky-medium text-haru-sky-deep font-bold rounded-tr-none shadow-sm"
-                                                : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-tl-none shadow-sm border border-slate-100 dark:border-slate-700"
-                                                }`}>
-                                                {msg.content}
+                                    {messages
+                                        .filter((msg, index, array) => {
+                                            // 운세/타로 관련 시스템성 메시지 필터링 강화
+                                            if (msg.role === "user") {
+                                                const isFortuneRequest = msg.content === "오늘의 운세를 알려줘!";
+                                                const isTarotRequest = msg.content.includes("타로 카드") && msg.content.includes("번을 골랐어");
+                                                return !isFortuneRequest && !isTarotRequest;
+                                            } else if (msg.role === "assistant") {
+                                                // 이전 메시지가 필터링된 요청이었는지 확인하여 대응하는 응답도 숨김
+                                                const prevMsg = array[index - 1];
+                                                if (prevMsg && prevMsg.role === "user") {
+                                                    const wasFortuneRequest = prevMsg.content === "오늘의 운세를 알려줘!";
+                                                    const wasTarotRequest = prevMsg.content.includes("타로 카드") && prevMsg.content.includes("번을 골랐어");
+                                                    if (wasFortuneRequest || wasTarotRequest) return false;
+                                                }
+                                                // 현재 상태에 저장된 결과와 일치하는 경우도 숨김 (백업)
+                                                if (msg.content === fortuneResult || msg.content === tarotResult) return false;
+                                            }
+                                            return true;
+                                        })
+                                        .map((msg, i) => (
+                                            <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                                                <div className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed ${msg.role === "user"
+                                                    ? "bg-haru-sky-medium text-haru-sky-deep font-bold rounded-tr-none shadow-sm"
+                                                    : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-tl-none shadow-sm border border-slate-100 dark:border-slate-700"
+                                                    }`}>
+                                                    {msg.content}
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        ))}
                                 </>
                             )}
 

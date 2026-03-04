@@ -408,6 +408,11 @@ def post_ai_chat(body: schemas.AIChatCreate, db: Session = Depends(get_db), user
             chat.fortune = reply
         elif "타로 카드" in body.message:
             chat.tarot = reply
+            # 메시지에서 카드 번호 추출 (예: "타로 카드 3번을 골랐어")
+            import re
+            match = re.search(r"타로 카드 (\d+)번", body.message)
+            if match:
+                chat.selected_card = int(match.group(1))
             
         db.commit()
         db.refresh(chat)
