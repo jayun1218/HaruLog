@@ -365,6 +365,47 @@ async def text_to_speech(body: schemas.TTSRequest):
         print(f"TTS Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.post("/tarot-image")
+async def generate_tarot_image(body: dict, db: Session = Depends(get_db), user_id: int = Depends(get_current_user_id)):
+    """DALL-E 3로 타로 카드 이미지를 생성합니다."""
+    current_client = get_openai_client()
+    if not current_client:
+        raise HTTPException(status_code=500, detail="OpenAI API key not configured")
+    
+    card_number = body.get("card_number", 1)
+    position = body.get("position", "현재")  # 과거, 현재, 미래
+    theme = body.get("theme", "신비로운 달빛")  # 카드 테마
+    
+    theme_prompts = {
+        "신비로운 달빛": "mystical moonlight, dark blue and silver, ethereal glowing moon",
+        "불꽃": "fire and flame, vivid red and orange, dramatic energy",
+        "자연": "lush nature, green forest, peaceful earth elements",
+        "우주": "cosmic space, nebula colors, stars and galaxies",
+    }
+    theme_detail = theme_prompts.get(theme, theme_prompts["신비로운 달빛"])
+    
+    prompt = (
+        f"A beautiful tarot card illustration, card number {card_number}, representing '{position}' position, "
+        f"themed with {theme_detail}. "
+        f"Ornate decorative border, mystical symbols, high quality digital art, vertical card format, "
+        f"no text, no words, artistic and symbolic."
+    )
+    
+    try:
+        response = current_client.images.generate(
+            model="dall-e-3",
+            prompt=prompt,
+            size="1024x1024",
+            quality="standard",
+            n=1
+        )
+        image_url = response.data[0].url
+        return {"image_url": image_url, "card_number": card_number, "position": position}
+    except Exception as e:
+        print(f"DALL-E Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/ai-chat/archive", response_model=List[schemas.AIChatArchiveResponse])
 def get_ai_chat_archive(db: Session = Depends(get_db), user_id: int = Depends(get_current_user_id)):
     # 운세나 타로 기록이 있는 페이지만 날짜 역순으로 조회
@@ -468,13 +509,20 @@ def post_ai_chat(body: schemas.AIChatCreate, db: Session = Depends(get_db), user
         # 운세 또는 타로 결과 저장
         if "오늘의 운세" in body.message:
             chat.fortune = reply
-        elif "타로 카드" in body.message:
+        elif "타로" in body.message:
             chat.tarot = reply
-            # 메시지에서 카드 번호 추출 (예: "타로 카드 3번을 골랐어")
             import re
-            match = re.search(r"타로 카드 (\d+)번", body.message)
-            if match:
-                chat.selected_card = int(match.group(1))
+            # 3장 스프레드: "과거 3번, 현재 1번, 미래 5번" 형태 파싱
+            spread_match = re.search(r"과거[:\s]*(\d+)번.*현재[:\s]*(\d+)번.*미래[:\s]*(\d+)번", body.message)
+            if spread_match:
+                cards = [int(spread_match.group(1)), int(spread_match.group(2)), int(spread_match.group(3))]
+                chat.selected_cards = cards
+                chat.selected_card = cards[1]  # 현재 카드를 대표 카드로
+            else:
+                # 단일 카드 파싱 (기존 방식)
+                single_match = re.search(r"타로 카드 (\d+)번", body.message)
+                if single_match:
+                    chat.selected_card = int(single_match.group(1))
             
         db.commit()
         db.refresh(chat)

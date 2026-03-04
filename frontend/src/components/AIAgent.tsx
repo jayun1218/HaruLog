@@ -23,6 +23,15 @@ export default function AIAgent() {
 
     const scrollRef = useRef<HTMLDivElement>(null);
 
+    // 타로/운세 관련 메시지는 대화 목록에서 숨김
+    const filterChatMessages = (msgs: { role: string; content: string }[]) =>
+        msgs.filter(m => !(
+            m.role === "user" && (
+                m.content?.includes("타로") ||
+                m.content?.includes("운세")
+            )
+        ));
+
     useEffect(() => {
         if (isOpen) {
             const today = new Date().toISOString().split('T')[0];
@@ -30,7 +39,7 @@ export default function AIAgent() {
                 .then(res => res.json())
                 .then(data => {
                     if (data.messages && data.messages.length > 0) {
-                        setMessages(data.messages);
+                        setMessages(filterChatMessages(data.messages));
                         if (data.mood) setMood(data.mood);
                     } else {
                         // 대화가 비어있는 경우, 첫 인사 유도 (숨겨진 메시지 전송)
@@ -40,6 +49,7 @@ export default function AIAgent() {
                 .catch(() => { });
         }
     }, [isOpen]);
+
 
     useEffect(() => {
         if (scrollRef.current) {
@@ -74,7 +84,7 @@ export default function AIAgent() {
 
             const data = await res.json();
             if (data.messages) {
-                setMessages(data.messages);
+                setMessages(filterChatMessages(data.messages));
                 if (data.mood) setMood(data.mood);
             }
         } catch (error: any) {

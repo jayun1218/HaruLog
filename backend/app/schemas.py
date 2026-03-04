@@ -93,6 +93,7 @@ class AIChatResponse(BaseModel):
     fortune: Optional[str] = None
     tarot: Optional[str] = None
     selected_card: Optional[int] = None
+    selected_cards: Optional[List[int]] = None   # 3장 스프레드 카드 번호 배열
     mood: Optional[str] = "NORMAL"  # 추가: 에이전트의 현재 감정 상태
 
     class Config:
@@ -106,6 +107,7 @@ class AIChatArchiveResponse(BaseModel):
     fortune: Optional[str] = None
     tarot: Optional[str] = None
     selected_card: Optional[int] = None
+    selected_cards: Optional[List[int]] = None   # 3장 스프레드
 
     class Config:
         from_attributes = True
