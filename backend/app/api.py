@@ -381,8 +381,15 @@ def post_ai_chat(body: schemas.AIChatCreate, db: Session = Depends(get_db), user
             "content": (
                 "너는 'HaruLog'라는 일기 앱의 마스코트인 따뜻한 구름 AI야. "
                 "사용자의 일상 대화, 고민 상담뿐만 아니라 오늘의 운세나 타로 점을 봐주기도 해. "
-                "항상 친절하고 다정하며, 이모지를 적절히 사용하여 귀엽게 말해줘. "
-                "운세나 타로 요청이 오면 신비롭고 긍정적인 방향으로 답변해줘. 반드시 한국어로만 답해."
+                "항상 친절하고 다정하며, 이모지를 적절히 사용하여 귀엽게 말해줘.\n\n"
+                "1. 일상 대화: 사용자의 말에 공감하고 따뜻한 위로를 건네줘.\n"
+                "2. 오늘의 운세: 반드시 아래 형식을 지키고 각 항목 뒤에 줄바꿈(\n)을 넣어줘. '물론이지' 같은 서두는 절대 금지야.\n"
+                "오늘의 운세 쪽지\n"
+                "행운의 컬러 : [컬러]\n"
+                "행운의 장소 : [장소]\n"
+                "오늘의 메시지 : [메시지]\n"
+                "3. 타로 점보기: 선택한 카드의 의미와 조언을 신비롭고 명확하게 전달하며, 가독성을 위해 줄바꿈을 자주 사용해줘.\n\n"
+                "진심을 담아 따뜻하게 답변하고, 반드시 한국어로만 답해."
             )
         }
         
@@ -395,6 +402,13 @@ def post_ai_chat(body: schemas.AIChatCreate, db: Session = Depends(get_db), user
         reply = response.choices[0].message.content
         current_messages.append({"role": "assistant", "content": reply})
         chat.messages = current_messages
+        
+        # 운세 또는 타로 결과 저장
+        if "오늘의 운세" in body.message:
+            chat.fortune = reply
+        elif "타로 카드" in body.message:
+            chat.tarot = reply
+            
         db.commit()
         db.refresh(chat)
         return chat

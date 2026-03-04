@@ -22,6 +22,8 @@ def run_migrations():
         "ALTER TABLE diaries ADD COLUMN IF NOT EXISTS pin_hash VARCHAR",
         "ALTER TABLE emotion_analyses ADD COLUMN IF NOT EXISTS keywords JSON",
         "ALTER TABLE emotion_analyses ADD COLUMN IF NOT EXISTS card_message TEXT",
+        "ALTER TABLE ai_chats ADD COLUMN IF NOT EXISTS fortune TEXT",
+        "ALTER TABLE ai_chats ADD COLUMN IF NOT EXISTS tarot TEXT",
     ]
     with engine.connect() as conn:
         for sql in migrations:

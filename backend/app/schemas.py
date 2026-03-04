@@ -90,6 +90,8 @@ class AIChatCreate(BaseModel):
 class AIChatResponse(BaseModel):
     messages: List[AIChatMessage]
     date: str
+    fortune: Optional[str] = None
+    tarot: Optional[str] = None
 
     class Config:
         from_attributes = True

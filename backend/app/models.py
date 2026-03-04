@@ -66,5 +66,7 @@ class AIChat(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
     date = Column(String, index=True)  # YYYY-MM-DD
     messages = Column(JSON)  # [{"role": "user", "content": "..."}, {"role": "assistant", "content": "..."}]
+    fortune = Column(Text, nullable=True)
+    tarot = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
