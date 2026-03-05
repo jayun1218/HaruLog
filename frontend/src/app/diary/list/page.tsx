@@ -129,67 +129,57 @@ export default function DiaryList() {
     const selectedDiaries = selectedDate ? (diaryMap[selectedDate] || []) : [];
 
     return (
-        <div className="flex flex-col p-5 min-h-[100dvh] max-w-md mx-auto bg-slate-50 dark:bg-slate-900 transition-colors">
-            <header className="flex items-center gap-4 mb-4">
+        <div className="flex flex-col p-5 min-h-[100dvh] max-w-6xl mx-auto bg-slate-50 dark:bg-slate-900 transition-colors">
+            <header className="flex items-center gap-4 mb-8">
                 <Link href="/" className="p-2 -ml-2 text-slate-400 hover:text-foreground text-xl">←</Link>
-                <h1 className="text-2xl font-bold flex-1 dark:text-slate-100">기록 모아보기</h1>
+                <h1 className="text-3xl font-black flex-1 dark:text-slate-100 italic tracking-tighter">기록 모아보기</h1>
             </header>
 
-            {/* 검색 영역 */}
-            <div className="flex flex-col gap-2 mb-4">
-                <div className="flex gap-2">
-                    <input
-                        type="text"
-                        value={searchQ}
-                        onChange={e => setSearchQ(e.target.value)}
-                        onKeyDown={e => e.key === "Enter" && handleSearch()}
-                        placeholder="🔍 제목 또는 내용 검색..."
-                        className="flex-1 p-3 bg-white dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 rounded-2xl text-sm border border-slate-100 dark:border-slate-700 focus:ring-2 focus:ring-haru-sky-accent outline-none"
-                    />
-                    <button onClick={handleSearch} className="px-4 py-2 bg-haru-sky-medium text-haru-sky-deep font-bold rounded-2xl text-sm hover:bg-haru-sky-accent transition-colors">검색</button>
-                </div>
-                <div className="flex gap-2">
-                    <select
-                        value={filterCategoryId}
-                        onChange={e => { setFilterCategoryId(Number(e.target.value) || ""); }}
-                        className="flex-1 p-2 bg-white dark:bg-slate-800 dark:text-slate-300 rounded-xl text-xs border border-slate-100 dark:border-slate-700 outline-none appearance-none"
-                    >
-                        <option value="">📁 카테고리 전체</option>
-                        {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
-                    {isSearchMode && (
-                        <button onClick={() => { setSearchQ(""); setFilterCategoryId(""); setIsSearchMode(false); loadDiaries(); }}
-                            className="px-3 py-1 bg-red-50 text-red-400 text-xs font-bold rounded-xl hover:bg-red-100">초기화</button>
-                    )}
-                </div>
-            </div>
-
-            {isLoading ? (
-                <div className="flex-1 flex items-center justify-center text-slate-400">소중한 기록들을 불러오고 있어요...</div>
-            ) : isSearchMode ? (
-                /* 검색 결과 리스트 뷰 */
-                <div className="flex flex-col gap-3">
-                    {diaries.length === 0 ? (
-                        <div className="text-center py-12 text-slate-400">검색 결과가 없어요</div>
-                    ) : diaries.map(diary => (
-                        <DiaryCard key={diary.id} diary={diary} expandedId={expandedId} setExpandedId={setExpandedId} onPin={handlePin} onRefresh={() => loadDiaries(searchQ || undefined, filterCategoryId || undefined)} />
-                    ))}
-                </div>
-            ) : (
-                <>
-                    {/* 달력 */}
-                    <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-soft p-5 mb-4">
-                        <div className="flex items-center justify-between mb-4">
-                            <button onClick={() => setCurrentDate(new Date(year, month - 1, 1))} className="w-9 h-9 rounded-full bg-slate-50 dark:bg-slate-700 hover:bg-haru-sky-light flex items-center justify-center text-slate-500 dark:text-slate-300 transition-colors">‹</button>
-                            <h2 className="text-lg font-bold dark:text-slate-100">{year}년 {month + 1}월</h2>
-                            <button onClick={() => setCurrentDate(new Date(year, month + 1, 1))} className="w-9 h-9 rounded-full bg-slate-50 dark:bg-slate-700 hover:bg-haru-sky-light flex items-center justify-center text-slate-500 dark:text-slate-300 transition-colors">›</button>
+            <div className="grid grid-cols-1 md:grid-cols-[380px,1fr] gap-10 items-start">
+                {/* 왼쪽 영역: 검색 및 캘린더 */}
+                <aside className="flex flex-col gap-6 md:sticky md:top-5">
+                    {/* 검색 영역 */}
+                    <div className="flex flex-col gap-2">
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                value={searchQ}
+                                onChange={e => setSearchQ(e.target.value)}
+                                onKeyDown={e => e.key === "Enter" && handleSearch()}
+                                placeholder="🔍 제목 또는 내용 검색..."
+                                className="flex-1 p-4 bg-white dark:bg-slate-800 dark:text-slate-200 shadow-sm rounded-2xl text-sm border border-slate-100 dark:border-slate-700 focus:ring-2 focus:ring-haru-sky-accent outline-none"
+                            />
+                            <button onClick={handleSearch} className="px-6 py-2 bg-haru-sky-deep text-white font-bold rounded-2xl text-sm hover:bg-black transition-all shadow-md active:scale-95">검색</button>
                         </div>
-                        <div className="grid grid-cols-7 mb-2">
+                        <div className="flex gap-2">
+                            <select
+                                value={filterCategoryId}
+                                onChange={e => { setFilterCategoryId(Number(e.target.value) || ""); }}
+                                className="flex-1 p-3 bg-white dark:bg-slate-800 dark:text-slate-300 shadow-sm rounded-xl text-xs border border-slate-100 dark:border-slate-700 outline-none appearance-none font-bold"
+                            >
+                                <option value="">📁 카테고리 전체</option>
+                                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            </select>
+                            {isSearchMode && (
+                                <button onClick={() => { setSearchQ(""); setFilterCategoryId(""); setIsSearchMode(false); loadDiaries(); }}
+                                    className="px-4 py-1 bg-white border border-red-100 text-red-400 text-xs font-bold rounded-xl hover:bg-red-50 transition-colors shadow-sm">초기화</button>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* 달력 */}
+                    <div className="bg-white dark:bg-slate-800 rounded-[2rem] shadow-soft p-6 border border-white/50 dark:border-slate-700">
+                        <div className="flex items-center justify-between mb-6">
+                            <button onClick={() => setCurrentDate(new Date(year, month - 1, 1))} className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-700 hover:bg-haru-sky-light flex items-center justify-center text-slate-500 dark:text-slate-300 transition-colors">‹</button>
+                            <h2 className="text-xl font-black dark:text-slate-100 tracking-tight">{year}년 {month + 1}월</h2>
+                            <button onClick={() => setCurrentDate(new Date(year, month + 1, 1))} className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-700 hover:bg-haru-sky-light flex items-center justify-center text-slate-500 dark:text-slate-300 transition-colors">›</button>
+                        </div>
+                        <div className="grid grid-cols-7 mb-4">
                             {WEEKDAYS.map((d, i) => (
-                                <div key={d} className={`text-center text-xs font-semibold py-1 ${i === 0 ? "text-red-400" : i === 6 ? "text-blue-400" : "text-slate-400"}`}>{d}</div>
+                                <div key={d} className={`text-center text-[10px] font-black py-1 uppercase tracking-widest ${i === 0 ? "text-red-400" : i === 6 ? "text-blue-400" : "text-slate-300"}`}>{d}</div>
                             ))}
                         </div>
-                        <div className="grid grid-cols-7 gap-y-1">
+                        <div className="grid grid-cols-7 gap-y-2">
                             {Array.from({ length: firstDay }).map((_, i) => <div key={`e-${i}`} />)}
                             {Array.from({ length: daysInMonth }).map((_, i) => {
                                 const day = i + 1;
@@ -210,17 +200,17 @@ export default function DiaryList() {
                                             router.push(`/diary/write?date=${dateKey}`);
                                         }
                                     }}
-                                        className={`flex flex-col items-center justify-start py-1.5 rounded-2xl transition-all ${isSelected ? "bg-haru-sky-accent scale-105 shadow-soft" : isToday ? "bg-haru-sky-light dark:bg-haru-sky-deep/20" : "hover:bg-slate-50 dark:hover:bg-slate-800/50"}`}
+                                        className={`flex flex-col items-center justify-start py-2.5 rounded-2xl transition-all relative ${isSelected ? "bg-haru-sky-accent scale-110 shadow-lg z-10" : isToday ? "bg-haru-sky-light dark:bg-haru-sky-deep/20" : "hover:bg-slate-50 dark:hover:bg-slate-700/50"}`}
                                         style={(!isSelected && !isToday && customColor) ? { backgroundColor: `${customColor}33` } : {}}
                                     >
-                                        <span className={`text-sm font-semibold leading-tight ${isToday ? "text-haru-sky-deep dark:text-haru-sky-accent" : "text-slate-700 dark:text-slate-300"}`}>{day}</span>
+                                        <span className={`text-[13px] font-black leading-tight ${isToday ? "text-haru-sky-deep dark:text-haru-sky-accent underline decoration-2 underline-offset-4" : "text-slate-700 dark:text-slate-300"}`}>{day}</span>
                                         {emoji ? (
                                             <div className="flex flex-col items-center">
-                                                <span className="text-base leading-none mt-0.5">{emoji}</span>
-                                                {customColor && <div className="w-1 h-1 rounded-full mt-0.5" style={{ backgroundColor: customColor }}></div>}
+                                                <span className="text-lg leading-none mt-1 animate-in zoom-in duration-300">{emoji}</span>
+                                                {customColor && <div className="w-1 h-1 rounded-full mt-1 border border-white" style={{ backgroundColor: customColor }}></div>}
                                             </div>
                                         ) : (
-                                            <span className="h-5 mt-0.5 text-[10px] text-slate-200 dark:text-slate-700 group-hover:text-haru-sky-accent">+</span>
+                                            <span className="h-5 mt-1 text-[10px] text-slate-200 dark:text-slate-700 group-hover:text-haru-sky-accent font-black">+</span>
                                         )}
                                     </button>
                                 );
@@ -228,36 +218,74 @@ export default function DiaryList() {
                         </div>
                     </div>
 
-                    <div className="text-xs text-slate-400 text-center mb-4 font-medium">
-                        {month + 1}월에 <span className="text-haru-sky-deep font-bold">{Object.keys(diaryMap).filter(k => k.startsWith(`${year}-${String(month + 1).padStart(2, "0")}`)).length}개</span>의 기록이 있어요
+                    <div className="text-[10px] text-slate-400 text-center font-black tracking-widest uppercase opacity-60">
+                        {month + 1}월에 <span className="text-haru-sky-deep font-black underline">{Object.keys(diaryMap).filter(k => k.startsWith(`${year}-${String(month + 1).padStart(2, "0")}`)).length}개</span>의 기록이 완성되었습니다
                     </div>
+                </aside>
 
-                    {selectedDate && (
-                        <div className="flex flex-col gap-3">
-                            <h3 className="text-sm font-bold text-slate-500 px-1">
-                                {new Date(selectedDate + "T12:00:00").toLocaleDateString("ko-KR", { month: "long", day: "numeric", weekday: "short" })} 기록
+                {/* 오른쪽 영역: 일기 리스트 */}
+                <section className="flex flex-col gap-6">
+                    {isLoading ? (
+                        <div className="flex-1 flex flex-col items-center justify-center text-slate-400 py-32 animate-pulse gap-4">
+                            <div className="text-6xl">✨</div>
+                            <p className="font-bold tracking-tight">소중한 기록들을 불러오고 있어요...</p>
+                        </div>
+                    ) : isSearchMode ? (
+                        <div className="flex flex-col gap-4">
+                            <h3 className="text-lg font-black text-slate-700 dark:text-slate-300 px-2 flex items-center gap-2">
+                                <span className="text-2xl">🔍</span> 검색 결과 ({diaries.length})
                             </h3>
-                            {selectedDiaries.length === 0 ? (
-                                <div className="bg-white rounded-3xl p-6 text-center">
-                                    <p className="text-slate-400 text-sm">이 날의 기록이 없어요</p>
-                                    <Link href="/diary/write" className="mt-3 inline-block text-xs text-haru-sky-deep font-bold border-b border-haru-sky-deep">일기 쓰러 가기</Link>
+                            {diaries.length === 0 ? (
+                                <div className="text-center py-24 bg-white/50 dark:bg-slate-800/50 rounded-3xl border border-dashed border-slate-200 dark:border-slate-700">
+                                    <p className="text-slate-400 font-bold">찾으시는 기록이 없어요 ☁️</p>
                                 </div>
-                            ) : selectedDiaries.map(diary => (
-                                <DiaryCard key={diary.id} diary={diary} expandedId={expandedId} setExpandedId={setExpandedId} onPin={handlePin} onRefresh={() => loadDiaries()} />
+                            ) : diaries.map(diary => (
+                                <DiaryCard key={diary.id} diary={diary} expandedId={expandedId} setExpandedId={setExpandedId} onPin={handlePin} onRefresh={() => loadDiaries(searchQ || undefined, filterCategoryId || undefined)} />
                             ))}
                         </div>
-                    )}
+                    ) : (
+                        <div className="flex flex-col gap-6">
+                            {selectedDate && (
+                                <div className="flex flex-col gap-4 animate-in slide-in-from-right-4 duration-500">
+                                    <h3 className="text-xl font-black text-slate-800 dark:text-slate-100 px-2 border-l-4 border-haru-sky-deep pl-4">
+                                        {new Date(selectedDate + "T12:00:00").toLocaleDateString("ko-KR", { month: "long", day: "numeric", weekday: "short" })}의 기록
+                                    </h3>
+                                    {selectedDiaries.length === 0 ? (
+                                        <div className="bg-white dark:bg-slate-800 rounded-[2rem] p-10 text-center shadow-soft border border-dashed border-slate-100">
+                                            <p className="text-slate-400 font-bold mb-4 italic">이 날의 기록이 아직 비어있네요</p>
+                                            <Link href={`/diary/write?date=${selectedDate}`} className="px-6 py-3 bg-haru-sky-deep text-white text-sm font-black rounded-2xl shadow-lg hover:-translate-y-1 transition-all inline-block">일기 쓰러 가기 ✨</Link>
+                                        </div>
+                                    ) : selectedDiaries.map(diary => (
+                                        <DiaryCard key={diary.id} diary={diary} expandedId={expandedId} setExpandedId={setExpandedId} onPin={handlePin} onRefresh={() => loadDiaries()} />
+                                    ))}
+                                </div>
+                            )}
 
-                    {diaries.length === 0 && (
-                        <div className="flex flex-col items-center justify-center gap-4 text-center mt-8">
-                            <span className="text-6xl opacity-20">📅</span>
-                            <p className="text-slate-500 font-medium">아직 기록된 하루가 없어요.<br />첫 일기를 써보시겠어요?</p>
-                            <Link href="/diary/write" className="text-haru-sky-deep font-bold border-b-2 border-haru-sky-deep pb-1">일기 쓰러 가기</Link>
+                            {diaries.length === 0 && !selectedDate && (
+                                <div className="flex flex-col items-center justify-center gap-6 text-center py-32 animate-in fade-in duration-1000">
+                                    <span className="text-8xl opacity-10 grayscale">📔</span>
+                                    <div className="flex flex-col gap-2">
+                                        <p className="text-xl font-black text-slate-400">아직 기록된 하루가 없어요</p>
+                                        <p className="text-sm text-slate-300 font-medium tracking-tight">당신의 소중한 이야기를 첫 번째 일기에 담아보세요.</p>
+                                    </div>
+                                    <Link href="/diary/write" className="text-haru-sky-deep font-black text-lg border-b-4 border-haru-sky-light pb-2 hover:border-haru-sky-accent transition-all">첫 일기 쓰기 →</Link>
+                                </div>
+                            )}
+
+                            {!selectedDate && diaries.length > 0 && (
+                                <div className="flex flex-col items-center justify-center gap-6 text-center py-32 bg-white/30 dark:bg-slate-800/30 rounded-[3rem] border border-dashed border-slate-100 dark:border-slate-700">
+                                    <span className="text-6xl animate-bounce">👈</span>
+                                    <div className="flex flex-col gap-1">
+                                        <p className="text-lg font-black text-slate-500">날짜를 선택해 주세요</p>
+                                        <p className="text-xs text-slate-400 font-medium">왼쪽 달력에서 확인하고 싶은 하루를 톡 눌러보세요.</p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
-                </>
-            )}
-            <footer className="mt-12 text-center text-slate-300 text-xs">차곡차곡 쌓인 너의 소중한 시간들</footer>
+                </section>
+            </div>
+            <footer className="mt-20 text-center text-slate-300 text-[10px] font-black tracking-[0.2em] uppercase opacity-50">Heartfelt memories collected piece by piece</footer>
         </div>
     );
 }

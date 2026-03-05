@@ -237,124 +237,127 @@ function DiaryWriteInner() {
 
             {/* Step 1: Mood Mixing */}
             {step === 1 && (
-                <div className="w-full max-w-md flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <div className="relative mb-12 group">
-                        {/* The Pot (Visual Representation) */}
-                        <div
-                            className="w-48 h-48 rounded-[3.5rem] shadow-2xl transition-all duration-700 relative overflow-hidden flex items-center justify-center bg-slate-50 dark:bg-slate-900 border-4 border-white dark:border-slate-800"
-                            style={{ boxShadow: `0 20px 40px -10px ${mixedColor}40` }}
-                        >
-                            {/* Inner Liquid Effect */}
+                <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-12 items-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="flex flex-col items-center">
+                        <div className="relative mb-8 group">
+                            {/* The Pot (Visual Representation) */}
                             <div
-                                className="absolute bottom-0 left-0 right-0 transition-all duration-500 flex flex-col-reverse"
-                                style={{ height: `${(totalSpoons / 10) * 100}%` }}
+                                className="w-56 h-56 md:w-72 md:h-72 rounded-[4rem] shadow-2xl transition-all duration-700 relative overflow-hidden flex items-center justify-center bg-slate-50 dark:bg-slate-900 border-4 border-white dark:border-slate-800"
+                                style={{ boxShadow: `0 20px 60px -15px ${mixedColor}60` }}
                             >
-                                {Object.entries(moodCounts).map(([id, count]) => {
-                                    if (count === 0) return null;
-                                    const mood = MOODS.find(m => m.id === id)!;
-                                    return (
-                                        <div
-                                            key={id}
-                                            className="transition-all duration-500 relative"
-                                            style={{
-                                                backgroundColor: mood.color,
-                                                height: `${(count / totalSpoons) * 100}%`,
-                                                opacity: 0.8
-                                            }}
-                                        >
-                                            <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                            <div className="relative z-10 text-4xl transform group-hover:scale-110 transition-transform duration-500 select-none">🍯</div>
-                        </div>
-
-                        {/* Streak-like indicator */}
-                        <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-white dark:bg-slate-800 px-4 py-1.5 rounded-full shadow-lg border border-slate-100 dark:border-slate-700 flex items-center gap-2">
-                            <div className="flex gap-1">
-                                {[...Array(10)].map((_, i) => (
-                                    <div key={i} className={`w-1.5 h-3 rounded-full transition-colors ${i < totalSpoons ? 'bg-haru-sky-accent' : 'bg-slate-200 dark:bg-slate-700'}`}></div>
-                                ))}
-                            </div>
-                            <span className="text-[10px] font-bold text-slate-500">{totalSpoons}/10</span>
-                        </div>
-                    </div>
-
-                    <p className="text-center text-slate-500 dark:text-slate-400 text-sm font-medium mb-12 px-8 leading-relaxed">
-                        오늘 하루 느꼈던 감정들을<br />
-                        스푼으로 솥에 담아 자유롭게 섞어보세요.
-                    </p>
-
-                    <div className="grid grid-cols-5 gap-3 w-full mb-12">
-                        {MOODS.map(mood => (
-                            <button
-                                key={mood.id}
-                                onClick={() => addSpoon(mood.id)}
-                                className="flex flex-col items-center gap-2 group"
-                            >
-                                <div className="w-14 h-14 rounded-2xl bg-slate-50 dark:bg-slate-900 shadow-soft flex items-center justify-center text-2xl group-active:scale-90 transition-all hover:bg-white dark:hover:bg-slate-800 border border-transparent hover:border-slate-200 dark:hover:border-slate-700">
-                                    {mood.emoji}
+                                {/* Inner Liquid Effect */}
+                                <div
+                                    className="absolute bottom-0 left-0 right-0 transition-all duration-500 flex flex-col-reverse"
+                                    style={{ height: `${(totalSpoons / 10) * 100}%` }}
+                                >
+                                    {Object.entries(moodCounts).map(([id, count]) => {
+                                        if (count === 0) return null;
+                                        const mood = MOODS.find(m => m.id === id)!;
+                                        return (
+                                            <div
+                                                key={id}
+                                                className="transition-all duration-500 relative"
+                                                style={{
+                                                    backgroundColor: mood.color,
+                                                    height: `${(count / totalSpoons) * 100}%`,
+                                                    opacity: 0.8
+                                                }}
+                                            >
+                                                <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
-                                <span className="text-[10px] font-bold text-slate-400">{mood.label}</span>
-                            </button>
-                        ))}
+                                <div className="relative z-10 text-6xl md:text-8xl transform group-hover:scale-110 transition-transform duration-500 select-none drop-shadow-lg">🍯</div>
+                            </div>
+
+                            {/* Streak-like indicator */}
+                            <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-white dark:bg-slate-800 px-6 py-2 rounded-full shadow-lg border border-slate-100 dark:border-slate-700 flex items-center gap-3">
+                                <div className="flex gap-1.5">
+                                    {[...Array(10)].map((_, i) => (
+                                        <div key={i} className={`w-2 h-4 rounded-full transition-colors ${i < totalSpoons ? 'bg-haru-sky-accent shadow-[0_0_8px_rgba(252,211,77,0.5)]' : 'bg-slate-200 dark:bg-slate-700'}`}></div>
+                                    ))}
+                                </div>
+                                <span className="text-xs font-black text-slate-500 tracking-tighter">{totalSpoons}/10</span>
+                            </div>
+                        </div>
+                        <p className="text-center text-slate-500 dark:text-slate-400 text-sm font-bold mt-4 leading-relaxed hidden md:block">
+                            오늘의 감정들을 솥에 담아보세요.<br />
+                            조합에 따라 나만의 색상이 만들어집니다. ✨
+                        </p>
                     </div>
 
-                    <div className="flex gap-4 w-full">
-                        <button
-                            onClick={resetPot}
-                            className="flex-1 py-4 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 font-bold text-sm flex items-center justify-center gap-2 hover:bg-slate-200 transition-colors"
-                        >
-                            <RotateCcw size={16} /> 다시 담기
-                        </button>
-                        <button
-                            onClick={handleMix}
-                            className="flex-[2] py-4 rounded-2xl bg-haru-sky-deep text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all"
-                        >
-                            조합하기 <ArrowRight size={16} />
-                        </button>
+                    <div className="flex flex-col gap-8 bg-white/50 dark:bg-slate-900/50 p-8 rounded-[3rem] border border-white dark:border-slate-800 shadow-sm">
+                        <div className="grid grid-cols-5 gap-4">
+                            {MOODS.map(mood => (
+                                <button
+                                    key={mood.id}
+                                    onClick={() => addSpoon(mood.id)}
+                                    className="flex flex-col items-center gap-2 group"
+                                >
+                                    <div className="w-16 h-16 md:w-20 md:h-20 rounded-3xl bg-white dark:bg-slate-800 shadow-soft flex items-center justify-center text-3xl group-active:scale-90 transition-all hover:-translate-y-1 border-2 border-transparent hover:border-haru-sky-accent">
+                                        {mood.emoji}
+                                    </div>
+                                    <span className="text-[11px] font-black text-slate-400 tracking-tighter">{mood.label}</span>
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="flex gap-4 w-full">
+                            <button
+                                onClick={resetPot}
+                                className="flex-1 py-5 rounded-2xl bg-white dark:bg-slate-800 text-slate-400 font-bold text-sm flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors shadow-sm border border-slate-100 dark:border-slate-700"
+                            >
+                                <RotateCcw size={18} /> 초기화
+                            </button>
+                            <button
+                                onClick={handleMix}
+                                className="flex-[2] py-5 rounded-2xl bg-slate-900 text-white font-black text-base flex items-center justify-center gap-2 shadow-2xl hover:bg-black hover:-translate-y-1 active:scale-95 transition-all"
+                            >
+                                색 조합하기 <ArrowRight size={20} />
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
 
             {/* Step 2: Result */}
             {step === 2 && (
-                <div className="w-full max-w-md flex flex-col items-center animate-in zoom-in-95 fade-in duration-700">
-                    <div className="w-full aspect-[3/4] p-8 rounded-[2.5rem] shadow-2xl flex flex-col transition-all duration-1000 overflow-hidden relative mb-12" style={{ backgroundColor: mixedColor }}>
+                <div className="w-full max-w-sm flex flex-col items-center animate-in zoom-in-95 fade-in duration-700">
+                    <div className="w-full aspect-[3/4] p-8 rounded-[3rem] shadow-2xl flex flex-col transition-all duration-1000 overflow-hidden relative mb-12" style={{ backgroundColor: mixedColor }}>
                         {/* Overlay to make text readable if color is too light */}
                         <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-black/10"></div>
 
-                        <div className="flex-1 flex flex-col justify-center items-center gap-4 relative z-10">
-                            <div className="w-20 h-20 bg-white/30 backdrop-blur-md rounded-full flex items-center justify-center text-4xl animate-bounce">✨</div>
-                            <h2 className="text-3xl font-black text-white drop-shadow-lg text-center leading-tight">
+                        <div className="flex-1 flex flex-col justify-center items-center gap-6 relative z-10">
+                            <div className="w-24 h-24 bg-white/30 backdrop-blur-md rounded-full flex items-center justify-center text-5xl animate-bounce shadow-inner">✨</div>
+                            <h2 className="text-4xl font-black text-white drop-shadow-2xl text-center leading-tight tracking-tighter">
                                 {colorName}
                             </h2>
                         </div>
 
-                        <div className="bg-white/90 backdrop-blur-sm p-6 rounded-3xl flex justify-between items-end relative z-10 shadow-lg">
+                        <div className="bg-white/95 backdrop-blur-sm p-8 rounded-[2rem] flex justify-between items-end relative z-10 shadow-xl border border-white">
                             <div>
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">HaruLog Mood Palette</p>
-                                <p className="text-lg font-mono font-bold text-slate-800">{mixedColor.toUpperCase()}</p>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1 opacity-70">HaruLog Mood Palette</p>
+                                <p className="text-xl font-mono font-black text-slate-800 tracking-tighter">{mixedColor.toUpperCase()}</p>
                             </div>
                             <div className="text-right">
-                                <p className="text-[10px] font-bold text-slate-400 mb-1">{selectedDate}</p>
-                                <p className="text-xs font-black text-haru-sky-deep">© 2026 HARULOG</p>
+                                <p className="text-[11px] font-black text-slate-500 mb-1">{selectedDate}</p>
+                                <p className="text-[10px] font-black text-haru-sky-deep tracking-wider">© 2026 HARULOG</p>
                             </div>
                         </div>
                     </div>
 
-                    <p className="text-center text-slate-500 text-sm font-medium mb-12 animate-pulse">
-                        이 예쁜 색상 위에 기록을 남겨볼까요?
+                    <p className="text-center text-slate-500 text-sm font-bold mb-12 animate-pulse tracking-tight">
+                        이 예쁜 색상 위에 오늘의 이야기를 담아볼까요?
                     </p>
 
                     <button
                         onClick={() => setStep(3)}
-                        className="w-full py-5 rounded-2xl bg-slate-900 text-white font-bold text-lg shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all flex items-center justify-center gap-3"
+                        className="w-full py-6 rounded-3xl bg-slate-950 text-white font-black text-xl shadow-[0_20px_40px_rgba(0,0,0,0.2)] hover:shadow-[0_25px_50px_rgba(0,0,0,0.3)] hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-3"
                     >
-                        기록 이어가기 <ArrowRight size={20} />
+                        기록 이어가기 <ArrowRight size={24} />
                     </button>
-                    <button onClick={() => setStep(1)} className="mt-6 text-slate-400 text-xs font-bold hover:text-slate-600 transition-colors underline underline-offset-4">
+                    <button onClick={() => setStep(1)} className="mt-8 text-slate-400 text-xs font-black hover:text-slate-600 transition-colors border-b border-transparent hover:border-slate-300 pb-1">
                         다시 만들고 싶어요
                     </button>
                 </div>
@@ -362,52 +365,79 @@ function DiaryWriteInner() {
 
             {/* Step 3: Writing */}
             {step === 3 && (
-                <div className="w-full max-w-md flex flex-col gap-8 animate-in slide-in-from-right-8 fade-in duration-500">
-                    {/* Compact Mood Preview */}
-                    <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
-                        <div className="w-12 h-12 rounded-xl" style={{ backgroundColor: mixedColor }}></div>
-                        <div className="flex-1">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Today&apos;s Mood Color</p>
-                            <h3 className="text-sm font-bold text-foreground">{colorName}</h3>
+                <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-[1.2fr,2fr] gap-10 animate-in slide-in-from-right-8 fade-in duration-500">
+                    {/* Left Column: Metadata & Setup */}
+                    <div className="flex flex-col gap-8 md:sticky md:top-5 h-fit">
+                        {/* Compact Mood Preview */}
+                        <div className="flex items-center gap-5 p-6 rounded-3xl bg-white dark:bg-slate-900 border-2 border-slate-50 dark:border-slate-800 shadow-soft">
+                            <div className="w-20 h-20 rounded-2xl shadow-lg shrink-0" style={{ backgroundColor: mixedColor }}></div>
+                            <div className="flex-1 flex flex-col gap-1">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest opacity-60">Mood Color</p>
+                                <h3 className="text-xl font-black text-foreground leading-tight tracking-tight">{colorName}</h3>
+                                <button onClick={() => setStep(2)} className="flex items-center gap-1.5 text-[11px] font-black text-haru-sky-deep mt-1 hover:underline">
+                                    <RotateCcw size={12} /> 색상 다시보기
+                                </button>
+                            </div>
                         </div>
-                        <button onClick={() => setStep(2)} className="p-2 text-slate-300 hover:text-slate-500"><RotateCcw size={16} /></button>
+
+                        <div className="flex flex-col gap-6 bg-slate-50/50 dark:bg-slate-900/50 p-6 rounded-[2.5rem] border border-slate-100 dark:border-slate-800">
+                            {/* Date */}
+                            <div>
+                                <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] pl-1 mb-3 block opacity-70">Date</label>
+                                <input
+                                    type="date"
+                                    value={selectedDate}
+                                    onChange={(e) => setSelectedDate(e.target.value)}
+                                    className="w-full p-4 bg-white dark:bg-slate-800 dark:text-slate-200 rounded-2xl border-none shadow-sm focus:ring-4 focus:ring-haru-sky-accent/20 outline-none font-black text-lg"
+                                />
+                            </div>
+
+                            {/* Category Selector */}
+                            <div>
+                                <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] pl-1 mb-3 block opacity-70">Category</label>
+                                <select
+                                    value={selectedCategoryId}
+                                    onChange={(e) => setSelectedCategoryId(Number(e.target.value))}
+                                    className="w-full p-4 bg-white dark:bg-slate-800 dark:text-slate-200 rounded-2xl border-none shadow-sm focus:ring-4 focus:ring-haru-sky-accent/20 outline-none font-bold text-sm appearance-none"
+                                >
+                                    <option value="">카테고리 없음</option>
+                                    {categories.map(cat => (
+                                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="hidden md:block p-2 text-center opacity-30">
+                            <span className="text-4xl">✒️</span>
+                        </div>
                     </div>
 
-                    <div className="flex flex-col gap-6">
-                        {/* Date */}
-                        <div>
-                            <label className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1 mb-2 block">Date</label>
-                            <input
-                                type="date"
-                                value={selectedDate}
-                                onChange={(e) => setSelectedDate(e.target.value)}
-                                className="w-full p-4 bg-slate-50 dark:bg-slate-900 dark:text-slate-200 rounded-2xl border-none focus:ring-2 focus:ring-haru-sky-accent outline-none font-bold"
-                            />
-                        </div>
-
+                    {/* Right Column: Title & Content */}
+                    <div className="flex flex-col gap-8">
                         {/* Title Suggestions */}
-                        <div className="flex flex-col gap-2">
+                        <div className="flex flex-col gap-3">
                             <div className="flex justify-between items-center px-1">
-                                <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Title</label>
+                                <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] opacity-70">Title</label>
                                 <button
                                     onClick={handleSuggestTitle}
                                     disabled={isSuggestingTitle || !content.trim()}
-                                    className="text-[10px] font-bold text-haru-sky-deep bg-haru-sky-accent/20 px-2 py-1 rounded-lg flex items-center gap-1 hover:bg-haru-sky-accent transition-all disabled:opacity-30"
+                                    className="text-[11px] font-black text-white bg-slate-900 px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-black transition-all disabled:opacity-30 shadow-md active:scale-95"
                                 >
-                                    <Sparkles size={12} /> AI 추천
+                                    <Sparkles size={14} className="animate-pulse" /> AI 제목 추천
                                 </button>
                             </div>
                             <input
                                 type="text"
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
-                                placeholder="오늘에게 이름을 붙여준다면?"
-                                className="w-full p-4 bg-slate-50 dark:bg-slate-900 dark:text-slate-200 rounded-2xl border-none focus:ring-2 focus:ring-haru-sky-accent outline-none text-lg font-bold"
+                                placeholder="오늘의 기록에 이름을 붙여주세요"
+                                className="w-full p-6 bg-white dark:bg-slate-900 dark:text-slate-100 rounded-[2rem] border-2 border-slate-50 dark:border-slate-800 focus:border-haru-sky-accent outline-none text-2xl font-black shadow-soft tracking-tight"
                             />
                             {suggestedTitles.length > 0 && (
-                                <div className="flex flex-col gap-2 mt-2">
+                                <div className="flex flex-wrap gap-2 mt-2">
                                     {suggestedTitles.map((t, i) => (
-                                        <button key={i} onClick={() => { setTitle(t); setSuggestedTitles([]); }} className="text-left p-3 bg-haru-sky-light dark:bg-haru-sky-deep/20 rounded-xl text-xs font-bold text-haru-sky-deep dark:text-haru-sky-accent hover:bg-haru-sky-medium transition-colors border border-haru-sky-accent/20">
+                                        <button key={i} onClick={() => { setTitle(t); setSuggestedTitles([]); }} className="text-left py-2.5 px-5 bg-white dark:bg-slate-800 rounded-2xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-haru-sky-deep dark:hover:text-haru-sky-accent hover:border-haru-sky-accent border-2 border-slate-50 dark:border-slate-700 transition-all shadow-sm">
                                             {t}
                                         </button>
                                     ))}
@@ -416,29 +446,30 @@ function DiaryWriteInner() {
                         </div>
 
                         {/* Content */}
-                        <div className="flex flex-col gap-2 relative">
+                        <div className="flex flex-col gap-3 relative">
                             <div className="flex justify-between items-center px-1">
-                                <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Diary</label>
-                                <span className="text-[10px] font-mono text-slate-300">{content.length} characters</span>
+                                <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] opacity-70">Diary Content</label>
+                                <span className="text-[10px] font-black text-slate-300 tracking-tighter uppercase">{content.length} characters</span>
                             </div>
-                            <div className="relative">
+                            <div className="relative group">
                                 <textarea
                                     value={content}
                                     onChange={(e) => setContent(e.target.value)}
                                     placeholder="무슨 일이 있었나요? 마음속 이야기를 편하게 들려주세요."
-                                    rows={12}
-                                    className="w-full p-5 bg-slate-50 dark:bg-slate-900 dark:text-slate-200 rounded-[2rem] border-none focus:ring-2 focus:ring-haru-sky-accent outline-none resize-none leading-relaxed text-sm font-medium"
+                                    rows={16}
+                                    className="w-full p-8 bg-white dark:bg-slate-900 dark:text-slate-100 rounded-[3rem] border-2 border-slate-50 dark:border-slate-800 focus:border-haru-sky-accent outline-none resize-none leading-relaxed text-lg font-medium shadow-soft"
                                 />
                                 {interimText && (
-                                    <div className="absolute bottom-6 left-6 right-16 p-3 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-2xl border border-haru-sky-accent/30 text-xs italic text-slate-400 animate-pulse">
-                                        {interimText}...
+                                    <div className="absolute top-8 left-8 right-24 p-4 bg-haru-sky-accent/90 backdrop-blur-md rounded-2xl border border-white shadow-xl text-sm font-black text-haru-sky-deep animate-in zoom-in-95 duration-200">
+                                        {interimText}<span className="animate-pulse">...</span>
                                     </div>
                                 )}
                                 <button
                                     onClick={isRecording ? stopRecording : startRecording}
-                                    className={`absolute bottom-6 right-6 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all ${isRecording ? 'bg-rose-500 animate-pulse scale-110' : 'bg-slate-900 hover:bg-black'} text-white`}
+                                    className={`absolute bottom-8 right-8 w-16 h-16 rounded-full flex items-center justify-center shadow-2xl transition-all z-20 ${isRecording ? 'bg-rose-500 animate-pulse scale-110' : 'bg-slate-900 hover:bg-black hover:scale-105'} text-white`}
+                                    title={isRecording ? "녹음 중지" : "음성으로 기록하기"}
                                 >
-                                    {isRecording ? <div className="w-4 h-4 bg-white rounded-sm" /> : <Mic size={24} />}
+                                    {isRecording ? <div className="w-5 h-5 bg-white rounded-sm" /> : <Mic size={28} />}
                                 </button>
                             </div>
                         </div>
@@ -447,9 +478,9 @@ function DiaryWriteInner() {
                         <button
                             onClick={handleSubmit}
                             disabled={isSubmitting || isRecording}
-                            className="w-full py-5 rounded-[2rem] bg-haru-sky-deep text-white font-bold text-lg shadow-xl hover:shadow-2xl hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                            className="w-full py-6 rounded-[2.5rem] bg-haru-sky-deep text-white font-black text-xl shadow-[0_25px_50px_-12px_rgba(59,130,246,0.3)] hover:shadow-[0_30px_60px_-12px_rgba(59,130,246,0.5)] hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50 mt-4"
                         >
-                            {isSubmitting ? "소중한 기록을 저장하는 중..." : <><Save size={20} /> 하루 저장하기</>}
+                            {isSubmitting ? "소중한 기록을 우주로 보내는 중..." : <><Save size={24} /> 오늘의 색 고이 저장하기</>}
                         </button>
                     </div>
                 </div>

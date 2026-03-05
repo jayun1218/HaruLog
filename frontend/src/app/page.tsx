@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
-import { LogOut, LogIn, User } from "lucide-react";
+import { LogOut, LogIn, User, ArrowRight } from "lucide-react";
 import { toast } from "@/components/Toast";
 import AIAgent from "@/components/AIAgent";
 import FortuneTeller from "@/components/FortuneTeller";
@@ -143,71 +143,81 @@ export default function Home() {
         )}
       </div>
 
-      <main className="w-full max-w-sm flex flex-col gap-4">
-        <Link href="/diary/write" className="fluffy-card flex items-center gap-4 group hover:shadow-xl hover:-translate-y-1">
-          <div className="w-14 h-14 bg-haru-sky-accent/20 dark:bg-haru-sky-accent/10 rounded-2xl flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">✨</div>
-          <div className="flex-1">
-            <h2 className="font-bold text-lg text-foreground mb-0.5">오늘을 기록하기</h2>
-            <p className="text-xs text-slate-400 font-medium">따뜻한 말 한마디로 하루를 마무리해요</p>
-          </div>
-        </Link>
-
-        <div className="grid grid-cols-2 gap-4">
-          <Link href="/diary/list" className="fluffy-card flex flex-col gap-3 group hover:shadow-lg hover:-translate-y-1">
-            <div className="w-10 h-10 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center text-xl">📅</div>
-            <div>
-              <h2 className="font-bold text-sm text-foreground">캘린더</h2>
-              <p className="text-[10px] text-slate-400">지난 날들</p>
+      <main className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+        {/* 상단 통합 섹션 (모바일에서는 맨 위, 데스크톱에서는 왼쪽 또는 중앙) */}
+        <div className="md:col-span-2 flex flex-col gap-6 mb-4">
+          <Link href="/diary/write" className="fluffy-card flex items-center gap-6 group hover:shadow-xl hover:-translate-y-1 py-8 px-10 bg-gradient-to-r from-haru-sky-light/30 to-white dark:from-haru-sky-deep/10 dark:to-slate-900 border-2 border-haru-sky-accent/20">
+            <div className="w-20 h-20 bg-haru-sky-accent/20 dark:bg-haru-sky-accent/10 rounded-[2rem] flex items-center justify-center text-5xl group-hover:scale-110 transition-transform animate-float">✨</div>
+            <div className="flex-1">
+              <h2 className="font-black text-2xl text-foreground mb-1">오늘을 기록하기</h2>
+              <p className="text-sm text-slate-400 font-medium">따뜻한 말 한마디로 하루를 마무리해요</p>
             </div>
-          </Link>
-
-          <Link href="/diary/gallery" className="fluffy-card flex flex-col gap-3 group hover:shadow-lg hover:-translate-y-1">
-            <div className="w-10 h-10 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center text-xl">🖼️</div>
-            <div>
-              <h2 className="font-bold text-sm text-foreground">갤러리</h2>
-              <p className="text-[10px] text-slate-400">사진 모아보기</p>
+            <div className="w-12 h-12 rounded-full bg-haru-sky-deep text-white flex items-center justify-center group-hover:translate-x-2 transition-transform shadow-lg">
+              <ArrowRight size={24} />
             </div>
           </Link>
         </div>
 
-        <Link href="/statistics" className="fluffy-card flex items-center gap-4 group hover:shadow-lg hover:-translate-y-1">
-          <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center text-2xl">📊</div>
-          <div className="flex-1">
-            <h2 className="font-bold text-base text-foreground">내 마음 통계</h2>
-            <p className="text-xs text-slate-400">데이터로 보는 나의 감정</p>
-          </div>
-        </Link>
+        <div className="flex flex-col gap-4">
+          <Link href="/diary/list" className="fluffy-card flex items-center gap-4 group hover:shadow-lg hover:-translate-y-1">
+            <div className="w-14 h-14 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center text-2xl group-hover:rotate-12 transition-transform">📅</div>
+            <div className="flex-1">
+              <h2 className="font-black text-lg text-foreground mb-0.5">기록 달력</h2>
+              <p className="text-xs text-slate-400 font-medium">지난 소중한 날들을 모아봐요</p>
+            </div>
+          </Link>
 
-        <Link href="/report" className="fluffy-card flex items-center gap-4 group hover:shadow-lg hover:-translate-y-1">
-          <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center text-2xl group-hover:rotate-12 transition-transform">💌</div>
-          <div className="flex-1">
-            <h2 className="font-bold text-base text-foreground">AI 리포트</h2>
-            <p className="text-xs text-slate-400">한 달의 마음 요약</p>
-          </div>
-        </Link>
+          <Link href="/diary/gallery" className="fluffy-card flex items-center gap-4 group hover:shadow-lg hover:-translate-y-1">
+            <div className="w-14 h-14 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center text-2xl group-hover:rotate-12 transition-transform">🖼️</div>
+            <div className="flex-1">
+              <h2 className="font-black text-lg text-foreground mb-0.5">추억 갤러리</h2>
+              <p className="text-xs text-slate-400 font-medium">사진 리스트로 모아보기</p>
+            </div>
+          </Link>
+        </div>
 
-        <button
-          onClick={async () => {
-            if (!('Notification' in window)) { toast('이 브라우저는 알림을 지원하지 않아요.', 'error'); return; }
-            const perm = await Notification.requestPermission();
-            if (perm === 'granted') {
-              const h = prompt('알림 시간 (시 단위, 0-23):', '21');
-              if (h !== null) {
-                localStorage.setItem('reminderHour', h);
-                toast(`매일 ${h}시에 일기 작성 알림을 설정했어요 ✔️`, 'success');
+        <div className="flex flex-col gap-4">
+          <Link href="/statistics" className="fluffy-card flex items-center gap-4 group hover:shadow-lg hover:-translate-y-1">
+            <div className="w-14 h-14 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center text-2xl group-hover:rotate-12 transition-transform">📊</div>
+            <div className="flex-1">
+              <h2 className="font-black text-lg text-foreground mb-0.5">내 마음 통계</h2>
+              <p className="text-xs text-slate-400 font-medium">데이터로 보는 나의 감정 흐름</p>
+            </div>
+          </Link>
+
+          <Link href="/report" className="fluffy-card flex items-center gap-4 group hover:shadow-lg hover:-translate-y-1">
+            <div className="w-14 h-14 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center text-2xl group-hover:rotate-12 transition-transform">💌</div>
+            <div className="flex-1">
+              <h2 className="font-black text-lg text-foreground mb-0.5">AI 월간 리포트</h2>
+              <p className="text-xs text-slate-400 font-medium">한 달의 마음 정성스레 요약</p>
+            </div>
+          </Link>
+        </div>
+
+        <div className="md:col-span-2">
+          <button
+            onClick={async () => {
+              if (!('Notification' in window)) { toast('이 브라우저는 알림을 지원하지 않아요.', 'error'); return; }
+              const perm = await Notification.requestPermission();
+              if (perm === 'granted') {
+                const h = prompt('알림 시간 (시 단위, 0-23):', '21');
+                if (h !== null) {
+                  localStorage.setItem('reminderHour', h);
+                  toast(`매일 ${h}시에 일기 작성 알림을 설정했어요 ✔️`, 'success');
+                }
+              } else {
+                toast('알림 권한을 허용해주세요.', 'info');
               }
-            } else {
-              toast('알림 권한을 허용해주세요.', 'info');
-            }
-          }}
-          className="fluffy-card flex items-center gap-4 group w-full text-left"
-        >
-          <div className="w-12 h-12 bg-slate-50 dark:bg-slate-900 rounded-2xl flex items-center justify-center text-xl group-hover:rotate-12 transition-transform">🔔</div>
-          <div>
-            <h2 className="font-bold text-sm text-foreground">일기 리마인더</h2>
-            <p className="text-xs text-slate-400">알림 설정</p>
-          </div>
-        </button>
+            }}
+            className="fluffy-card flex items-center gap-4 group w-full text-left"
+          >
+            <div className="w-12 h-12 bg-slate-50 dark:bg-slate-900 rounded-2xl flex items-center justify-center text-xl group-hover:rotate-12 transition-transform">🔔</div>
+            <div>
+              <h2 className="font-bold text-sm text-foreground">일기 리마인더</h2>
+              <p className="text-xs text-slate-400">알림 설정</p>
+            </div>
+          </button>
+        </div>
       </main>
 
       <footer className="mt-12 text-slate-400 text-[10px] font-bold tracking-widest uppercase opacity-50">
