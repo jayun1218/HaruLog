@@ -2,12 +2,20 @@
 
 import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Chrome, ArrowRight } from "lucide-react";
 
 export default function LoginPage() {
     const { data: session, status } = useSession();
     const router = useRouter();
+
+    const [isApp, setIsApp] = useState(false);
+
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            setIsApp(!!(window as any).Capacitor?.isNativePlatform);
+        }
+    }, []);
 
     useEffect(() => {
         if (status === "authenticated") {
@@ -37,7 +45,6 @@ export default function LoginPage() {
                     {/* Google Login */}
                     <button
                         onClick={() => {
-                            const isApp = typeof window !== "undefined" && (window as any).Capacitor?.isNativePlatform;
                             const callbackUrl = isApp ? "/auth/app-redirect" : "/";
                             signIn("google", { callbackUrl });
                         }}
