@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { ArrowLeft, Image as ImageIcon, Calendar, Heart, Search } from "lucide-react";
+import { useBackendToken } from "@/components/AuthProvider";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -15,12 +17,19 @@ interface Diary {
 }
 
 export default function Gallery() {
+    const { data: session, status } = useSession();
+    const { backendToken } = useBackendToken();
     const [diaries, setDiaries] = useState<Diary[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQ, setSearchQ] = useState("");
 
     useEffect(() => {
-        fetch(`${API}/api/diaries`)
+        if (status === "loading") return;
+        if (!backendToken) { setIsLoading(false); return; }
+
+        fetch(`${API}/api/diaries`, {
+            headers: { "Authorization": `Bearer ${backendToken}` }
+        })
             .then(res => res.json())
             .then(data => {
                 if (Array.isArray(data)) {
@@ -30,14 +39,14 @@ export default function Gallery() {
                 setIsLoading(false);
             })
             .catch(() => setIsLoading(false));
-    }, []);
+    }, [backendToken, status]);
 
     const filteredDiaries = diaries.filter(d =>
         d.title.toLowerCase().includes(searchQ.toLowerCase())
     );
 
     return (
-        <div className="flex flex-col p-6 min-h-[100dvh] max-w-md mx-auto bg-slate-50 dark:bg-slate-950 transition-colors pb-12">
+        <div className="flex flex-col p-6 min-h-[100dvh] max-w-6xl mx-auto bg-slate-50 dark:bg-slate-950 transition-colors pb-12">
             <header className="flex flex-col gap-6 mb-8">
                 <div className="flex items-center gap-4">
                     <Link href="/" className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 shadow-soft flex items-center justify-center text-slate-400 hover:text-foreground transition-all">
@@ -46,7 +55,7 @@ export default function Gallery() {
                     <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">추억 갤러리</h1>
                 </div>
 
-                <div className="relative">
+                <div className="relative max-w-md md:mx-auto w-full">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                     <input
                         type="text"
@@ -74,7 +83,7 @@ export default function Gallery() {
                     </div>
                 </div>
             ) : (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
                     {filteredDiaries.map((diary) => (
                         <Link
                             key={diary.id}

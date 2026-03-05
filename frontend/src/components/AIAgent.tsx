@@ -2,10 +2,12 @@
 
 import { useState, useEffect, useRef } from "react";
 import { toast } from "@/components/Toast";
+import { useBackendToken } from "@/components/AuthProvider";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export default function AIAgent() {
+    const { backendToken } = useBackendToken();
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState<{ role: string; content: string }[]>([]);
     const [input, setInput] = useState("");
@@ -35,7 +37,8 @@ export default function AIAgent() {
     useEffect(() => {
         if (isOpen) {
             const today = new Date().toISOString().split('T')[0];
-            fetch(`${API}/api/ai-chat/${today}`)
+            const headers: any = backendToken ? { Authorization: `Bearer ${backendToken}` } : {};
+            fetch(`${API}/api/ai-chat/${today}`, { headers })
                 .then(res => res.json())
                 .then(data => {
                     if (data.messages && data.messages.length > 0) {
@@ -48,7 +51,7 @@ export default function AIAgent() {
                 })
                 .catch(() => { });
         }
-    }, [isOpen]);
+    }, [isOpen, backendToken]);
 
 
     useEffect(() => {
@@ -72,8 +75,10 @@ export default function AIAgent() {
         try {
             const res = await fetch(`${API}/api/ai-chat`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
+                headers: {
+                    "Content-Type": "application/json",
+                    ...(backendToken ? { Authorization: `Bearer ${backendToken}` } : {})
+                },
                 body: JSON.stringify({ message: messageText }),
             });
 

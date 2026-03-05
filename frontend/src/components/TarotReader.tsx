@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { toast } from "@/components/Toast";
+import { useBackendToken } from "@/components/AuthProvider";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -23,6 +24,7 @@ interface SpreadCard {
 }
 
 export default function TarotReader() {
+    const { backendToken } = useBackendToken();
     const [isOpen, setIsOpen] = useState(false);
     const [phase, setPhase] = useState<"theme" | "select" | "result">("theme");
     const [selectedTheme, setSelectedTheme] = useState(THEMES[0]);
@@ -36,7 +38,8 @@ export default function TarotReader() {
     const CARD_COUNT = 7;
 
     const fetchArchive = () => {
-        fetch(`${API}/api/ai-chat/archive`, { credentials: "include" })
+        const headers: any = backendToken ? { Authorization: `Bearer ${backendToken}` } : {};
+        fetch(`${API}/api/ai-chat/archive`, { headers })
             .then(res => res.json())
             .then(data => {
                 const tarotArchive = data.filter((item: any) => item.tarot);
@@ -48,7 +51,8 @@ export default function TarotReader() {
     useEffect(() => {
         if (isOpen) {
             const today = new Date().toISOString().split('T')[0];
-            fetch(`${API}/api/ai-chat/${today}`, { credentials: "include" })
+            const headers: any = backendToken ? { Authorization: `Bearer ${backendToken}` } : {};
+            fetch(`${API}/api/ai-chat/${today}`, { headers })
                 .then(res => res.json())
                 .then(data => {
                     if (data.tarot) {
@@ -64,7 +68,7 @@ export default function TarotReader() {
                 })
                 .catch(() => { });
         }
-    }, [isOpen]);
+    }, [isOpen, backendToken]);
 
     const handleClose = () => {
         setIsOpen(false);
@@ -98,8 +102,10 @@ export default function TarotReader() {
         try {
             const res = await fetch(`${API}/api/tarot-image`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
+                headers: {
+                    "Content-Type": "application/json",
+                    ...(backendToken ? { Authorization: `Bearer ${backendToken}` } : {})
+                },
                 body: JSON.stringify({ card_number: cardNum, position, theme: selectedTheme.id }),
             });
             const imgData = await res.json();
@@ -145,8 +151,10 @@ export default function TarotReader() {
         try {
             const res = await fetch(`${API}/api/ai-chat`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
+                headers: {
+                    "Content-Type": "application/json",
+                    ...(backendToken ? { Authorization: `Bearer ${backendToken}` } : {})
+                },
                 body: JSON.stringify({ message }),
             });
             if (!res.ok) throw new Error("서버 오류");

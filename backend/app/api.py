@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Header
 from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
+from pydantic import BaseModel as PydanticBaseModel
 import os
 import json
 from openai import OpenAI
@@ -22,32 +23,69 @@ def get_openai_client():
         return None
     return OpenAI(api_key=api_key)
 
-# JWT Secret (NextAuth와 공유)
+# JWT Secret (NextAuth와 공유 - 직접 서명)
 SECRET_KEY = os.getenv("NEXTAUTH_SECRET", "yoursecret")
 ALGORITHM = "HS256"
 
+def create_backend_token(email: str, name: str = None, picture: str = None, provider: str = "social") -> str:
+    """백엔드가 직접 서명한 JWT 토큰 생성 (python-jose 사용)"""
+    from datetime import datetime, timedelta
+    payload = {
+        "email": email,
+        "name": name,
+        "picture": picture,
+        "provider": provider,
+        "exp": datetime.utcnow() + timedelta(days=30),
+        "iat": datetime.utcnow(),
+    }
+    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+
 def get_current_user_id(authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
-    # 1. 토큰이 없는 경우 (개발/테스트용) - 기본 사용자 'guest' 보장
+    # 디버깅: 받은 헤더 로그 확인
+    print(f"DEBUG: Received Authorization Header: {authorization}")
+    
+    # 1. 토큰이 없는 경우 - 보안을 위해 예외 발생
     if not authorization:
-        user = db.query(models.User).filter(models.User.id == 1).first()
-        if not user:
-            user = models.User(id=1, email="guest@harulog.com", name="Guest")
-            db.add(user)
-            db.commit()
-            db.refresh(user)
-        return user.id
+        print("DEBUG: Authorization header is missing")
+        raise HTTPException(status_code=401, detail="인증 토큰이 필요합니다.")
     
     try:
         # "Bearer <token>" 형식 처리
-        token = authorization.split(" ")[1]
+        parts = authorization.split(" ")
+        if len(parts) != 2 or parts[0].lower() != "bearer":
+            print(f"DEBUG: Invalid authorization format: {parts}")
+            raise HTTPException(status_code=401, detail="잘못된 인증 형식입니다.")
+            
+        token = parts[1]
         
-        # NextAuth JWT 디코드 (시크릿 검증 시도)
+        # NextAuth JWT 디코드 (시크릿 검증 필수)
         try:
-            # 실무에서는 시크릿 검증이 필수지만, 설정되지 않은 경우를 대비해 유연하게 처리
-            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        except JWTError:
-            # 시크릿 불일치 또는 검증 오류 시에도 클레임 추출 (개발 편의성)
-            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM], options={"verify_signature": False})
+            # 디버깅: 시크릿 키 로드 확인
+            actual_secret = os.getenv("NEXTAUTH_SECRET", "yoursecret")
+            print(f"DEBUG: SECRET_KEY from env - Length: {len(actual_secret)}, Prefix: {actual_secret[:3]}...")
+            
+            # 먼저 검증 없이 디코딩해서 구조 확인 (디버깅용)
+            try:
+                unverified = jwt.get_unverified_claims(token)
+                print(f"DEBUG: Unverified Payload: {unverified}")
+            except Exception as e:
+                print(f"DEBUG: Failed to read unverified claims: {e}")
+
+            # NextAuth 토큰에는 aud(audience)가 포함되어 있을 수 있으므로 verify_aud=False로 유연하게 처리
+            # 만약 실패하면 기본값(yoursecret)으로도 한번 더 시도 (환경변수 로딩 문제 확인용)
+            try:
+                payload = jwt.decode(token, actual_secret, algorithms=[ALGORITHM], options={"verify_aud": False})
+            except JWTError:
+                if actual_secret != "yoursecret":
+                    print("DEBUG: Retry with default 'yoursecret'...")
+                    payload = jwt.decode(token, "yoursecret", algorithms=[ALGORITHM], options={"verify_aud": False})
+                else:
+                    raise
+
+            print(f"DEBUG: JWT Decoded successfully. Email: {payload.get('email')}")
+        except JWTError as e:
+            print(f"DEBUG: JWT Verification failed: {e}")
+            raise HTTPException(status_code=401, detail=f"유효하지 않은 토큰입니다: {str(e)}")
             
         email = payload.get("email")
         name = payload.get("name")
@@ -55,11 +93,13 @@ def get_current_user_id(authorization: Optional[str] = Header(None), db: Session
         provider = payload.get("provider", "social")
         
         if not email:
-            return 1 # 기본 게스트 계정
+            print("DEBUG: Email missing in token payload")
+            raise HTTPException(status_code=401, detail="토큰에 이메일 정보가 없습니다.")
             
         # DB에서 사용자 확인 및 자동 생성 (Sync)
         user = db.query(models.User).filter(models.User.email == email).first()
         if not user:
+            print(f"DEBUG: Creating new user for email: {email}")
             user = models.User(
                 email=email,
                 name=name,
@@ -70,7 +110,7 @@ def get_current_user_id(authorization: Optional[str] = Header(None), db: Session
             db.commit()
             db.refresh(user)
         else:
-            # 정보 업데이트 (선택 사항)
+            # 정보 업데이트
             update_needed = False
             if name and user.name != name:
                 user.name = name
@@ -82,14 +122,55 @@ def get_current_user_id(authorization: Optional[str] = Header(None), db: Session
                 db.commit()
             
         return user.id
-        
+    except HTTPException:
+        raise
     except Exception as e:
-        print(f"Auth error: {e}")
-        return 1 # 오류 발생 시 기본 게스트 계정 반환
+        import traceback
+        traceback.print_exc()
+        print(f"DEBUG: Auth error: {e}")
+        raise HTTPException(status_code=401, detail="인증 처리 중 오류가 발생했습니다.")
 
 @router.get("/status")
 async def get_status():
     return {"status": "Analysis service is online"}
+
+# --- 소셜 로그인 → 백엔드 JWT 발급 ---
+class SocialLoginRequest(PydanticBaseModel):
+    email: str
+    name: Optional[str] = None
+    picture: Optional[str] = None
+    provider: str = "google"
+
+@router.post("/auth/token")
+def issue_backend_token(body: SocialLoginRequest, db: Session = Depends(get_db)):
+    """구글 등 소셜 로그인 후, 백엔드가 직접 서명한 JWT를 발급합니다."""
+    user = db.query(models.User).filter(models.User.email == body.email).first()
+    if not user:
+        user = models.User(
+            email=body.email,
+            name=body.name,
+            profile_image=body.picture,
+            provider=body.provider,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+    else:
+        update_needed = False
+        if body.name and user.name != body.name:
+            user.name = body.name; update_needed = True
+        if body.picture and user.profile_image != body.picture:
+            user.profile_image = body.picture; update_needed = True
+        if update_needed:
+            db.commit()
+
+    token = create_backend_token(
+        email=user.email,
+        name=user.name,
+        picture=user.profile_image,
+        provider=user.provider or "social"
+    )
+    return {"token": token, "user_id": user.id}
 
 # --- Category API ---
 @router.get("/categories", response_model=List[schemas.Category])
@@ -132,7 +213,7 @@ def delete_category(category_id: int, db: Session = Depends(get_db), user_id: in
 
 # --- STT API ---
 @router.post("/stt", response_model=schemas.STTResponse)
-async def speech_to_text(file: UploadFile = File(...)):
+async def speech_to_text(file: UploadFile = File(...), user_id: int = Depends(get_current_user_id)):
     current_client = get_openai_client()
     if not current_client:
         return {"text": "음성 인식 테스트 결과입니다. (OpenAI API 키가 설정되지 않았습니다)"}
@@ -246,21 +327,26 @@ def toggle_pin(diary_id: int, db: Session = Depends(get_db), user_id: int = Depe
 
 @router.get("/statistics")
 def get_statistics(db: Session = Depends(get_db), user_id: int = Depends(get_current_user_id)):
-    analyses = db.query(models.EmotionAnalysis).join(models.Diary).filter(models.Diary.user_id == user_id).all()
+    # 사용자의 일기와 연결된 감정 분석 결과만 조회
+    analyses = db.query(models.EmotionAnalysis).join(models.Diary).filter(
+        models.Diary.user_id == user_id
+    ).order_by(models.EmotionAnalysis.created_at.desc()).all()
     
     if not analyses:
-        return {"emotion_distribution": {}, "total_count": 0}
+        return {"emotion_distribution": {}, "total_count": 0, "recent_positive_points": []}
 
     total_count = len(analyses)
     emotion_totals = {}
     for analysis in analyses:
+        if not analysis.emotions: continue
         for emotion, score in analysis.emotions.items():
+            # 감정 키값 표준화 (한글/영어 혼용 대응)
             emotion_totals[emotion] = emotion_totals.get(emotion, 0) + score
             
     return {
         "emotion_distribution": {k: v / total_count for k, v in emotion_totals.items()},
         "total_count": total_count,
-        "recent_positive_points": [a.positive_points for a in analyses[-3:] if a.positive_points]
+        "recent_positive_points": [a.positive_points for a in analyses[:3] if a.positive_points]
     }
 
 # --- 이미지 업로드 ---
@@ -378,7 +464,7 @@ def unlock_diary(diary_id: int, body: LockRequest, db: Session = Depends(get_db)
 
 # --- AI Agent Chat API ---
 @router.post("/tts")
-async def text_to_speech(body: schemas.TTSRequest):
+async def text_to_speech(body: schemas.TTSRequest, user_id: int = Depends(get_current_user_id)):
     current_client = get_openai_client()
     if not current_client:
         raise HTTPException(status_code=500, detail="OpenAI API key not configured")

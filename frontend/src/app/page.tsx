@@ -8,6 +8,7 @@ import { toast } from "@/components/Toast";
 import AIAgent from "@/components/AIAgent";
 import FortuneTeller from "@/components/FortuneTeller";
 import TarotReader from "@/components/TarotReader";
+import { useBackendToken } from "@/components/AuthProvider";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -34,6 +35,7 @@ function calcStreak(diaries: { created_at: string }[]): number {
 
 export default function Home() {
   const { data: session } = useSession();
+  const { backendToken } = useBackendToken();
   const [darkMode, setDarkMode] = useState(false);
   const [greeting, setGreeting] = useState("");
   const [streak, setStreak] = useState(0);
@@ -43,9 +45,9 @@ export default function Home() {
     setDarkMode(saved);
     document.documentElement.classList.toggle("dark", saved);
 
-    // 로그인된 경우에만 일기 목록 가져오기 (인증 헤더 추가)
-    const fetchOptions = (session as any)?.accessToken
-      ? { headers: { Authorization: `Bearer ${(session as any).accessToken}` } }
+    // 로그인된 경우에만 일기 목록 가져오기
+    const fetchOptions = backendToken
+      ? { headers: { Authorization: `Bearer ${backendToken}` } }
       : {};
 
     fetch(`${API}/api/diaries`, fetchOptions)
@@ -62,7 +64,7 @@ export default function Home() {
     else if (hour >= 12 && hour < 17) g = "나른한 오후네요 ☁️";
     else if (hour >= 17 && hour < 21) g = "포근한 저녁이에요 🌅";
     setGreeting(g);
-  }, [session]);
+  }, [session, backendToken]);
 
   const toggleDark = () => {
     const next = !darkMode;

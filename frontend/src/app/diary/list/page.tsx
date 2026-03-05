@@ -4,8 +4,10 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "@/components/Toast";
+import { useSession } from "next-auth/react";
 import { Sparkles, Image as ImageIcon, Lock, Unlock, Pin, ChevronUp, ChevronDown, Camera } from "lucide-react";
 import ShareCard from "@/components/ShareCard";
+import { useBackendToken } from "@/components/AuthProvider";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -66,6 +68,8 @@ function getEmotionHeatColor(emotions?: Record<string, number>, mood?: string): 
 }
 
 export default function DiaryList() {
+    const { data: session, status } = useSession();
+    const { backendToken } = useBackendToken();
     const router = useRouter();
     const [diaries, setDiaries] = useState<Diary[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
@@ -78,23 +82,30 @@ export default function DiaryList() {
     const [isSearchMode, setIsSearchMode] = useState(false);
 
     const loadDiaries = useCallback(async (q?: string, catId?: number | "") => {
+        if (!backendToken) return;
         const params = new URLSearchParams();
         if (q) params.set("q", q);
         if (catId) params.set("category_id", String(catId));
-        const res = await fetch(`${API}/api/diaries?${params.toString()}`);
+        const res = await fetch(`${API}/api/diaries?${params.toString()}`, {
+            headers: { "Authorization": `Bearer ${backendToken}` }
+        });
         const data = await res.json();
         setDiaries(Array.isArray(data) ? data : []);
-    }, []);
+    }, [backendToken]);
 
     useEffect(() => {
+        if (status === "loading") return;
+        if (!backendToken) { setIsLoading(false); return; }
+
+        const headers = { "Authorization": `Bearer ${backendToken}` };
         Promise.all([
             loadDiaries(searchQ || undefined, filterCategoryId || undefined),
-            fetch(`${API}/api/categories`).then(r => r.json()),
+            fetch(`${API}/api/categories`, { headers }).then(r => r.json()),
         ]).then(([, cats]) => {
             setCategories(Array.isArray(cats) ? cats : []);
             setIsLoading(false);
         }).catch(() => setIsLoading(false));
-    }, [loadDiaries, filterCategoryId]); // filterCategoryId 변경 시 자동 로드
+    }, [loadDiaries, filterCategoryId, backendToken, status]);
 
     const handleSearch = () => {
         setIsSearchMode(!!(searchQ || filterCategoryId));
@@ -103,7 +114,11 @@ export default function DiaryList() {
 
     const handlePin = async (id: number, e: React.MouseEvent) => {
         e.stopPropagation();
-        await fetch(`${API}/api/diaries/${id}/pin`, { method: "PATCH" });
+        if (!backendToken) return;
+        await fetch(`${API}/api/diaries/${id}/pin`, {
+            method: "PATCH",
+            headers: { "Authorization": `Bearer ${backendToken}` }
+        });
         loadDiaries(searchQ || undefined, filterCategoryId || undefined);
     };
 
@@ -137,7 +152,7 @@ export default function DiaryList() {
 
             <div className="grid grid-cols-1 md:grid-cols-[380px,1fr] gap-10 items-start">
                 {/* 왼쪽 영역: 검색 및 캘린더 */}
-                <aside className="flex flex-col gap-6 md:sticky md:top-5">
+                <aside className="flex flex-col gap-6">
                     {/* 검색 영역 */}
                     <div className="flex flex-col gap-2">
                         <div className="flex gap-2">
@@ -297,6 +312,7 @@ function DiaryCard({ diary, expandedId, setExpandedId, onPin, onRefresh }: {
     onPin: (id: number, e: React.MouseEvent) => void;
     onRefresh: () => void;
 }) {
+    const { backendToken } = useBackendToken();
     const isExpanded = expandedId === diary.id;
     const [isPinLocked, setIsPinLocked] = useState(diary.is_locked ?? false);
     const [showUnlock, setShowUnlock] = useState(false);
@@ -306,18 +322,28 @@ function DiaryCard({ diary, expandedId, setExpandedId, onPin, onRefresh }: {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleLock = async () => {
+        if (!backendToken) return;
         const pin = prompt("잠금 PIN 4자리를 설정하세요:");
         if (!pin) return;
         await fetch(`${API}/api/diaries/${diary.id}/lock`, {
-            method: "POST", headers: { "Content-Type": "application/json" },
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${backendToken}`
+            },
             body: JSON.stringify({ pin })
         });
         setIsPinLocked(true); setUnlocked(false); onRefresh();
     };
 
     const handleUnlock = async () => {
+        if (!backendToken) return;
         const res = await fetch(`${API}/api/diaries/${diary.id}/unlock`, {
-            method: "POST", headers: { "Content-Type": "application/json" },
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${backendToken}`
+            },
             body: JSON.stringify({ pin: pinInput })
         });
         if (res.ok) {
@@ -330,12 +356,17 @@ function DiaryCard({ diary, expandedId, setExpandedId, onPin, onRefresh }: {
     };
 
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!backendToken) return;
         const file = e.target.files?.[0];
         if (!file) return;
         const form = new FormData();
         form.append("file", file);
         form.append("diary_id", String(diary.id));
-        const res = await fetch(`${API}/api/upload?diary_id=${diary.id}`, { method: "POST", body: form });
+        const res = await fetch(`${API}/api/upload?diary_id=${diary.id}`, {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${backendToken}` },
+            body: form
+        });
         if (res.ok) {
             toast("이미지가 성공적으로 첨부되었어요 📷", "success");
             onRefresh();

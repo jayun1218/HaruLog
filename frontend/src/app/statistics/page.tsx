@@ -6,6 +6,7 @@ import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     PieChart, Pie, Cell, Legend, AreaChart, Area
 } from "recharts";
+import { useBackendToken } from "@/components/AuthProvider";
 import { ArrowLeft, BarChart3, TrendingUp, Sparkles, Award } from "lucide-react";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -25,20 +26,48 @@ interface Stats {
 }
 
 export default function Statistics() {
+    const { backendToken, isLoading: tokenLoading } = useBackendToken();
     const [stats, setStats] = useState<Stats | null>(null);
     const [diaries, setDiaries] = useState<{ created_at: string; analysis?: { emotions: Record<string, number> } }[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        Promise.all([
-            fetch(`${API}/api/statistics`).then(r => r.json()),
-            fetch(`${API}/api/diaries`).then(r => r.json()),
-        ]).then(([statsData, diaryData]) => {
-            setStats(statsData);
-            if (Array.isArray(diaryData)) setDiaries(diaryData);
+        if (tokenLoading) return;
+
+        if (!backendToken) {
             setIsLoading(false);
-        }).catch(() => setIsLoading(false));
-    }, []);
+            return;
+        }
+
+        const fetchData = async () => {
+            try {
+                const headers = { "Authorization": `Bearer ${backendToken}` };
+
+                const [statsRes, diaryRes] = await Promise.all([
+                    fetch(`${API}/api/statistics`, { headers }),
+                    fetch(`${API}/api/diaries`, { headers }),
+                ]);
+
+                if (!statsRes.ok || !diaryRes.ok) {
+                    const statsErr = await statsRes.text();
+                    console.error("Stats fetch failed:", statsRes.status, statsErr);
+                    throw new Error("Failed to fetch statistics");
+                }
+
+                const statsData = await statsRes.json();
+                const diaryData = await diaryRes.json();
+
+                setStats(statsData);
+                if (Array.isArray(diaryData)) setDiaries(diaryData);
+            } catch (error) {
+                console.error("Fetch stats error:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [backendToken, tokenLoading]);
 
     const trendData = useMemo(() => {
         const map: Record<string, { emotions: Record<string, number[]> }> = {};
@@ -46,7 +75,7 @@ export default function Statistics() {
             if (!d.analysis?.emotions) return;
             const date = d.created_at.slice(5, 10); // MM-DD
             if (!map[date]) map[date] = { emotions: {} };
-            Object.entries(d.analysis.emotions).forEach(([em, v]: [string, any]) => {
+            Object.entries(d.analysis.emotions || {}).forEach(([em, v]: [string, any]) => {
                 if (!map[date].emotions[em]) map[date].emotions[em] = [];
                 map[date].emotions[em].push(v);
             });
@@ -63,9 +92,16 @@ export default function Statistics() {
     }, [diaries]);
 
     const pieData = useMemo(() => {
-        if (!stats) return [];
+        if (!stats?.emotion_distribution || Object.keys(stats.emotion_distribution).length === 0) return [];
+        const emotionMap: Record<string, string> = {
+            "joy": "기쁨", "happiness": "기쁨",
+            "sadness": "슬픔", "sad": "슬픔",
+            "anxiety": "불안", "fear": "불안",
+            "anger": "분노", "angry": "분노",
+            "calm": "평온", "neutral": "평온"
+        };
         return Object.entries(stats.emotion_distribution).map(([name, value]) => ({
-            name,
+            name: emotionMap[name.toLowerCase()] || name,
             value: Math.round(value * 100)
         })).sort((a, b) => b.value - a.value);
     }, [stats]);
@@ -170,7 +206,7 @@ export default function Statistics() {
                             <h2 className="font-bold text-slate-800 dark:text-slate-100">스스로 칭찬해! ✨</h2>
                         </div>
                         <div className="flex flex-col gap-3">
-                            {stats.recent_positive_points.flat().slice(0, 3).map((point: string, i: number) => (
+                            {(stats.recent_positive_points || []).flat().slice(0, 3).map((point: string, i: number) => (
                                 <div key={i} className="flex items-start gap-3 p-4 bg-emerald-50/50 dark:bg-emerald-900/10 rounded-2xl group transition-all">
                                     <span className="text-lg group-hover:scale-125 transition-transform">🌟</span>
                                     <p className="text-sm font-medium text-slate-600 dark:text-slate-300 leading-tight">{point}</p>

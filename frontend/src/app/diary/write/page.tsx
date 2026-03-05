@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "@/components/Toast";
 import { Sparkles, ArrowRight, RotateCcw, Mic, Save, X, Plus } from "lucide-react";
+import { useBackendToken } from "@/components/AuthProvider";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -53,6 +54,7 @@ function rgbToHex(r: number, g: number, b: number) {
 function DiaryWriteInner() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const { backendToken } = useBackendToken();
     const initialDate = searchParams.get("date");
 
     // --- State ---
@@ -78,10 +80,12 @@ function DiaryWriteInner() {
 
     // --- Effects ---
     useEffect(() => {
-        fetch(`${API}/api/categories`)
+        const headers: any = backendToken ? { Authorization: `Bearer ${backendToken}` } : {};
+        fetch(`${API}/api/categories`, { headers })
             .then(res => res.json())
-            .then(data => setCategories(Array.isArray(data) ? data : []));
-    }, []);
+            .then(data => setCategories(Array.isArray(data) ? data : []))
+            .catch(() => { });
+    }, [backendToken]);
 
     // 색상 조합 로직
     useEffect(() => {
@@ -143,7 +147,10 @@ function DiaryWriteInner() {
         try {
             const res = await fetch(`${API}/api/suggest-title`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    ...(backendToken ? { Authorization: `Bearer ${backendToken}` } : {})
+                },
                 body: JSON.stringify({ content }),
             });
             const data = await res.json();
@@ -162,7 +169,10 @@ function DiaryWriteInner() {
         try {
             const res = await fetch(`${API}/api/diaries`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    ...(backendToken ? { Authorization: `Bearer ${backendToken}` } : {})
+                },
                 body: JSON.stringify({
                     title,
                     content,
@@ -219,10 +229,13 @@ function DiaryWriteInner() {
     const totalSpoons = Object.values(moodCounts).reduce((a, b) => a + b, 0);
 
     return (
-        <div className="min-h-[100dvh] transition-colors duration-700 bg-white dark:bg-slate-950 flex flex-col items-center p-6 pb-12">
+        <div className={`transition-colors duration-700 bg-white dark:bg-slate-950 flex flex-col items-center ${step === 3
+            ? "h-[100dvh] overflow-hidden px-4 pt-4 pb-0"
+            : "min-h-[100dvh] p-6 pb-12"
+            }`}>
 
             {/* Header */}
-            <header className="w-full max-w-md flex justify-between items-center mb-12">
+            <header className="w-full max-w-5xl flex justify-between items-center mb-6 shrink-0">
                 <Link href="/" className="p-2 -ml-2 text-slate-400 hover:text-foreground transition-colors">
                     <X size={24} />
                 </Link>
@@ -365,25 +378,31 @@ function DiaryWriteInner() {
 
             {/* Step 3: Writing */}
             {step === 3 && (
-                <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-[1.2fr,2fr] gap-10 animate-in slide-in-from-right-8 fade-in duration-500">
-                    {/* Left Column: Metadata & Setup */}
-                    <div className="flex flex-col gap-8 md:sticky md:top-5 h-fit">
+                <div className="w-full max-w-5xl flex-1 flex flex-col md:grid md:grid-cols-[280px,1fr] gap-4 md:gap-8 animate-in slide-in-from-right-8 fade-in duration-500 overflow-hidden">
+                    {/* 색상 블록: 모바일=상단 compact bar, 데스크탑=왼쪽 sticky */}
+                    <div className="shrink-0 md:overflow-y-auto md:pb-8">
                         {/* Compact Mood Preview */}
-                        <div className="flex items-center gap-5 p-6 rounded-3xl bg-white dark:bg-slate-900 border-2 border-slate-50 dark:border-slate-800 shadow-soft">
-                            <div className="w-20 h-20 rounded-2xl shadow-lg shrink-0" style={{ backgroundColor: mixedColor }}></div>
-                            <div className="flex-1 flex flex-col gap-1">
+                        <div className="flex items-center gap-4 p-4 md:p-6 rounded-2xl md:rounded-3xl bg-white dark:bg-slate-900 border-2 border-slate-50 dark:border-slate-800 shadow-soft">
+                            <div className="w-12 h-12 md:w-20 md:h-20 rounded-xl md:rounded-2xl shadow-lg shrink-0" style={{ backgroundColor: mixedColor }}></div>
+                            <div className="flex-1 flex flex-col gap-0.5">
                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest opacity-60">Mood Color</p>
-                                <h3 className="text-xl font-black text-foreground leading-tight tracking-tight">{colorName}</h3>
-                                <button onClick={() => setStep(2)} className="flex items-center gap-1.5 text-[11px] font-black text-haru-sky-deep mt-1 hover:underline">
+                                <h3 className="text-base md:text-xl font-black text-foreground leading-tight tracking-tight">{colorName}</h3>
+                                <button onClick={() => setStep(2)} className="flex items-center gap-1.5 text-[11px] font-black text-haru-sky-deep hover:underline">
                                     <RotateCcw size={12} /> 색상 다시보기
                                 </button>
                             </div>
                         </div>
+                        <div className="hidden md:block p-2 text-center opacity-30 mt-4">
+                            <span className="text-4xl">✒️</span>
+                        </div>
+                    </div>
 
-                        <div className="flex flex-col gap-6 bg-slate-50/50 dark:bg-slate-900/50 p-6 rounded-[2.5rem] border border-slate-100 dark:border-slate-800">
-                            {/* Date */}
+                    {/* 오른쪽: 날짜+카테고리+제목+내용 — 이 영역만 스크롤 */}
+                    <div className="flex-1 overflow-y-auto pb-8 flex flex-col gap-5">
+                        {/* Date + Category (스크롤과 함께 이동) */}
+                        <div className="flex flex-col gap-4 bg-slate-50/50 dark:bg-slate-900/50 p-5 rounded-[2rem] border border-slate-100 dark:border-slate-800">
                             <div>
-                                <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] pl-1 mb-3 block opacity-70">Date</label>
+                                <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] pl-1 mb-2 block opacity-70">Date</label>
                                 <input
                                     type="date"
                                     value={selectedDate}
@@ -391,10 +410,8 @@ function DiaryWriteInner() {
                                     className="w-full p-4 bg-white dark:bg-slate-800 dark:text-slate-200 rounded-2xl border-none shadow-sm focus:ring-4 focus:ring-haru-sky-accent/20 outline-none font-black text-lg"
                                 />
                             </div>
-
-                            {/* Category Selector */}
                             <div>
-                                <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] pl-1 mb-3 block opacity-70">Category</label>
+                                <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] pl-1 mb-2 block opacity-70">Category</label>
                                 <select
                                     value={selectedCategoryId}
                                     onChange={(e) => setSelectedCategoryId(Number(e.target.value))}
@@ -408,13 +425,6 @@ function DiaryWriteInner() {
                             </div>
                         </div>
 
-                        <div className="hidden md:block p-2 text-center opacity-30">
-                            <span className="text-4xl">✒️</span>
-                        </div>
-                    </div>
-
-                    {/* Right Column: Title & Content */}
-                    <div className="flex flex-col gap-8">
                         {/* Title Suggestions */}
                         <div className="flex flex-col gap-3">
                             <div className="flex justify-between items-center px-1">
@@ -456,7 +466,7 @@ function DiaryWriteInner() {
                                     value={content}
                                     onChange={(e) => setContent(e.target.value)}
                                     placeholder="무슨 일이 있었나요? 마음속 이야기를 편하게 들려주세요."
-                                    rows={16}
+                                    rows={10}
                                     className="w-full p-8 bg-white dark:bg-slate-900 dark:text-slate-100 rounded-[3rem] border-2 border-slate-50 dark:border-slate-800 focus:border-haru-sky-accent outline-none resize-none leading-relaxed text-lg font-medium shadow-soft"
                                 />
                                 {interimText && (

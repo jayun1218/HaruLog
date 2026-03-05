@@ -2,10 +2,12 @@
 
 import { useState, useEffect, useRef } from "react";
 import { toast } from "@/components/Toast";
+import { useBackendToken } from "@/components/AuthProvider";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export default function FortuneTeller() {
+    const { backendToken } = useBackendToken();
     const [isOpen, setIsOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [isNoteVisible, setIsNoteVisible] = useState(false);
@@ -17,7 +19,8 @@ export default function FortuneTeller() {
     const scrollRef = useRef<HTMLDivElement>(null);
 
     const fetchArchive = () => {
-        fetch(`${API}/api/ai-chat/archive`)
+        const headers: any = backendToken ? { Authorization: `Bearer ${backendToken}` } : {};
+        fetch(`${API}/api/ai-chat/archive`, { headers })
             .then(res => res.json())
             .then(data => {
                 const fortuneArchive = data.filter((item: any) => item.fortune);
@@ -29,7 +32,8 @@ export default function FortuneTeller() {
     useEffect(() => {
         if (isOpen) {
             const today = new Date().toISOString().split('T')[0];
-            fetch(`${API}/api/ai-chat/${today}`)
+            const headers: any = backendToken ? { Authorization: `Bearer ${backendToken}` } : {};
+            fetch(`${API}/api/ai-chat/${today}`, { headers })
                 .then(res => res.json())
                 .then(data => {
                     if (data.fortune) {
@@ -40,16 +44,20 @@ export default function FortuneTeller() {
                 })
                 .catch(() => { });
         }
-    }, [isOpen]);
+    }, [isOpen, backendToken]);
 
     const handleGetFortune = async () => {
         if (isLoading) return;
         setIsLoading(true);
 
         try {
+            const headers: any = {
+                "Content-Type": "application/json",
+                ...(backendToken ? { Authorization: `Bearer ${backendToken}` } : {})
+            };
             const res = await fetch(`${API}/api/ai-chat`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers,
                 body: JSON.stringify({ message: "오늘의 운세를 알려줘!" }),
             });
             const data = await res.json();
