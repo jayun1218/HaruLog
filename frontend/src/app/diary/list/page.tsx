@@ -144,7 +144,7 @@ export default function DiaryList() {
     const selectedDiaries = selectedDate ? (diaryMap[selectedDate] || []) : [];
 
     return (
-        <div className="flex flex-col p-5 min-h-[100dvh] max-w-6xl mx-auto bg-slate-50 dark:bg-slate-900 transition-colors">
+        <div className="flex flex-col p-5 min-h-[100dvh] max-w-6xl mx-auto transition-colors">
             <header className="flex items-center gap-4 mb-8">
                 <Link href="/" className="p-2 -ml-2 text-slate-400 hover:text-foreground text-xl">←</Link>
                 <h1 className="text-3xl font-black flex-1 dark:text-slate-100 italic tracking-tighter">기록 모아보기</h1>
@@ -194,7 +194,7 @@ export default function DiaryList() {
                                 <div key={d} className={`text-center text-[10px] font-black py-1 uppercase tracking-widest ${i === 0 ? "text-red-400" : i === 6 ? "text-blue-400" : "text-slate-300"}`}>{d}</div>
                             ))}
                         </div>
-                        <div className="grid grid-cols-7 gap-y-2">
+                        <div className="grid grid-cols-7 gap-y-2" style={{ gridAutoRows: '52px' }}>
                             {Array.from({ length: firstDay }).map((_, i) => <div key={`e-${i}`} />)}
                             {Array.from({ length: daysInMonth }).map((_, i) => {
                                 const day = i + 1;
@@ -215,18 +215,28 @@ export default function DiaryList() {
                                             router.push(`/diary/write?date=${dateKey}`);
                                         }
                                     }}
-                                        className={`flex flex-col items-center justify-start py-2.5 rounded-2xl transition-all relative ${isSelected ? "bg-haru-sky-accent scale-110 shadow-lg z-10" : isToday ? "bg-haru-sky-light dark:bg-haru-sky-deep/20" : "hover:bg-slate-50 dark:hover:bg-slate-700/50"}`}
-                                        style={(!isSelected && !isToday && customColor) ? { backgroundColor: `${customColor}33` } : {}}
+                                        className={`relative flex flex-col items-center justify-center rounded-2xl transition-all ${isSelected
+                                                ? "ring-2 ring-white ring-offset-1 shadow-lg scale-105 z-10"
+                                                : "hover:brightness-110"
+                                            }`}
+                                        style={{
+                                            height: '52px',
+                                            overflow: 'hidden',
+                                            backgroundColor: isSelected
+                                                ? (customColor || '#7dd3fc')
+                                                : customColor
+                                                    ? customColor
+                                                    : isToday
+                                                        ? '#e0f2fe'
+                                                        : 'transparent',
+                                        }}
                                     >
-                                        <span className={`text-[13px] font-black leading-tight ${isToday ? "text-haru-sky-deep dark:text-haru-sky-accent underline decoration-2 underline-offset-4" : "text-slate-700 dark:text-slate-300"}`}>{day}</span>
-                                        {emoji ? (
-                                            <div className="flex flex-col items-center">
-                                                <span className="text-lg leading-none mt-1 animate-in zoom-in duration-300">{emoji}</span>
-                                                {customColor && <div className="w-1 h-1 rounded-full mt-1 border border-white" style={{ backgroundColor: customColor }}></div>}
-                                            </div>
-                                        ) : (
-                                            <span className="h-5 mt-1 text-[10px] text-slate-200 dark:text-slate-700 group-hover:text-haru-sky-accent font-black">+</span>
-                                        )}
+                                        <span className={`text-[13px] font-black ${(hasDiary || isSelected)
+                                                ? "text-white drop-shadow-sm"
+                                                : isToday
+                                                    ? "text-haru-sky-deep underline decoration-2 underline-offset-2"
+                                                    : "text-slate-700 dark:text-slate-300"
+                                            }`}>{day}</span>
                                     </button>
                                 );
                             })}
@@ -398,7 +408,7 @@ function DiaryCard({ diary, expandedId, setExpandedId, onPin, onRefresh }: {
 
     return (
         <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-soft overflow-hidden">
-            <div onClick={() => setExpandedId(isExpanded ? null : diary.id)} className="w-full p-5 text-left flex flex-col gap-2 cursor-pointer select-none">
+            <div onClick={() => setExpandedId(isExpanded ? null : diary.id)} className="w-full p-5 text-left flex flex-col gap-2 cursor-pointer select-none min-h-[96px] justify-center">
                 <div className="flex justify-between items-start gap-2">
                     <div className="flex flex-col gap-1 flex-1 min-w-0">
                         <div className="flex items-center gap-2">
