@@ -74,7 +74,7 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[100dvh] p-8 gap-12 bg-slate-50 dark:bg-slate-950 transition-colors">
+    <div className="flex flex-col items-center justify-center min-h-[100dvh] p-4 sm:p-8 gap-8 sm:gap-12 bg-slate-50 dark:bg-slate-950 transition-colors">
       <header className="text-center flex flex-col items-center gap-6 mb-4">
         <div className="relative group cursor-pointer">
           <div className="w-28 h-28 bg-white dark:bg-slate-900 rounded-[3rem] flex items-center justify-center text-5xl shadow-soft animate-float border-4 border-haru-sky-accent/20 overflow-hidden">
@@ -94,13 +94,13 @@ export default function Home() {
             ];
             const badge = badges.find(b => streak >= b.min && streak <= b.max) ?? badges[0];
             return (
-              <div className="absolute -top-3 -right-3 flex flex-col items-end gap-0.5">
-                <div className={`bg-haru-sky-accent text-haru-sky-deep text-[10px] font-black px-3 py-1.5 rounded-full shadow-lg border-2 border-white dark:border-slate-800 transform group-hover:scale-110 transition-transform flex items-center gap-1`}>
+              <div className="absolute -top-2 -right-2 sm:-top-3 sm:-right-3 flex flex-col items-end gap-0.5 max-w-[120px] sm:max-w-none">
+                <div className={`bg-haru-sky-accent text-haru-sky-deep text-[9px] sm:text-[10px] font-black px-2 sm:px-3 py-1 sm:py-1.5 rounded-full shadow-lg border-2 border-white dark:border-slate-800 transform group-hover:scale-110 transition-transform flex items-center gap-1 whitespace-nowrap`}>
                   <span>{badge.icon}</span>
                   <span>{streak}일 연속</span>
                 </div>
-                <span className="text-[9px] font-bold text-slate-400 pr-1">
-                  {badge.next ? `${badge.name} · 다음까지 ${badge.next - streak}일` : `${badge.name} · 최고 등급! 🎉`}
+                <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 pr-1 whitespace-nowrap">
+                  {badge.next ? `${badge.name} · ${badge.next - streak}일` : `${badge.name} 🎉`}
                 </span>
               </div>
             );
@@ -148,14 +148,14 @@ export default function Home() {
       <main className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
         {/* 상단 통합 섹션 (모바일에서는 맨 위, 데스크톱에서는 왼쪽 또는 중앙) */}
         <div className="md:col-span-2 flex flex-col gap-6 mb-4">
-          <Link href="/diary/write" className="fluffy-card flex items-center gap-6 group hover:shadow-xl hover:-translate-y-1 py-8 px-10 bg-gradient-to-r from-haru-sky-light/30 to-white dark:from-haru-sky-deep/10 dark:to-slate-900 border-2 border-haru-sky-accent/20">
-            <div className="w-20 h-20 bg-haru-sky-accent/20 dark:bg-haru-sky-accent/10 rounded-[2rem] flex items-center justify-center text-5xl group-hover:scale-110 transition-transform animate-float">✨</div>
-            <div className="flex-1">
-              <h2 className="font-black text-2xl text-foreground mb-1">오늘을 기록하기</h2>
-              <p className="text-sm text-slate-400 font-medium">따뜻한 말 한마디로 하루를 마무리해요</p>
+          <Link href="/diary/write" className="fluffy-card flex items-center gap-4 sm:gap-6 group hover:shadow-xl hover:-translate-y-1 py-5 sm:py-8 px-5 sm:px-10 bg-gradient-to-r from-haru-sky-light/30 to-white dark:from-haru-sky-deep/10 dark:to-slate-900 border-2 border-haru-sky-accent/20">
+            <div className="w-14 h-14 sm:w-20 sm:h-20 bg-haru-sky-accent/20 dark:bg-haru-sky-accent/10 rounded-[2rem] flex items-center justify-center text-3xl sm:text-5xl group-hover:scale-110 transition-transform animate-float flex-shrink-0">✨</div>
+            <div className="flex-1 min-w-0">
+              <h2 className="font-black text-lg sm:text-2xl text-foreground mb-1 whitespace-nowrap">오늘을 기록하기</h2>
+              <p className="text-xs sm:text-sm text-slate-400 font-medium">따뜻한 말 한마디로 하루를 마무리해요</p>
             </div>
-            <div className="w-12 h-12 rounded-full bg-haru-sky-deep text-white flex items-center justify-center group-hover:translate-x-2 transition-transform shadow-lg">
-              <ArrowRight size={24} />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-haru-sky-deep text-white flex items-center justify-center group-hover:translate-x-2 transition-transform shadow-lg flex-shrink-0">
+              <ArrowRight size={20} />
             </div>
           </Link>
         </div>
