@@ -2,21 +2,26 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useBackendToken } from "@/components/AuthProvider";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export default function MonthlyReport() {
     const now = new Date();
+    const { backendToken } = useBackendToken();
     const [year, setYear] = useState(now.getFullYear());
     const [month, setMonth] = useState(now.getMonth() + 1);
     const [report, setReport] = useState<{ report: string; diary_count?: number } | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
     const fetchReport = async () => {
+        if (!backendToken) return;
         setIsLoading(true);
         setReport(null);
         try {
-            const res = await fetch(`${API}/api/report/monthly?year=${year}&month=${month}`);
+            const res = await fetch(`${API}/api/report/monthly?year=${year}&month=${month}`, {
+                headers: { Authorization: `Bearer ${backendToken}` }
+            });
             const data = await res.json();
             setReport(data);
         } catch {
@@ -28,7 +33,7 @@ export default function MonthlyReport() {
 
     useEffect(() => {
         fetchReport();
-    }, [year, month]);
+    }, [year, month, backendToken]);
 
     return (
         <div className="flex flex-col p-6 min-h-[100dvh] max-w-md mx-auto bg-slate-50 dark:bg-slate-900 transition-colors">
