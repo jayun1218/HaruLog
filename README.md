@@ -45,7 +45,8 @@
 ## 🛠 기술 스택
 
 **Frontend**: Next.js (App Router) · Tailwind CSS · Recharts · Lucide React · html2canvas  
-**Backend**: Python · FastAPI · PostgreSQL (SQLAlchemy) · python-dotenv  
+**Mobile**: Capacitor (Core · iOS · Browser · App)  
+**Backend**: Python · FastAPI · PostgreSQL (SQLAlchemy) · pydantic · python-dotenv  
 **AI**: OpenAI GPT-4o (분석 · 대화 · 제목추천 · 리포트) · DALL-E 3 (타로 이미지) · Whisper-1 (STT)
 
 ---
@@ -77,6 +78,14 @@ npm install
 npm run dev
 ```
 접속: [http://localhost:3000](http://localhost:3000)
+
+### 4. 모바일 (iOS) 빌드 및 실행
+```bash
+cd frontend
+npm run build
+npx cap sync ios
+# 이후 Xcode에서 ios/App/App.xcworkspace를 열고 물리 기기에서 Build & Run
+```
 
 ---
 
@@ -116,9 +125,9 @@ HaruLog/
 - [x] 스트릭 뱃지 시스템 (🌱🔥⭐👑)
 - [x] SNS 공유 카드 (PNG 다운로드)
 - [x] 🍯 감정 믹서 (Mood Mixer) & 고유 컬러 생성
-- [x] Google 소셜 로그인 (NextAuth.js)
-- [x] 웹/모바일(iOS) 반응형 레이아웃 최적화
-- [ ] 모바일 앱 패키징 (Capacitor/React Native)
+- [x] Google 소셜 로그인 (NextAuth.js + In-App Browser 최적화)
+- [x] 웹/모바일(iOS) 반응형 레이아웃 및 상단 여백(Notch) 최적화
+- [x] 모바일 앱 패키징 (Capacitor) 및 고해상도 앱 아이콘 적용
 
 ---
 
