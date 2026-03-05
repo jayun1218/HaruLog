@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import { useSession, signOut } from "next-auth/react";
+import { LogOut, LogIn, User } from "lucide-react";
 import { toast } from "@/components/Toast";
 import AIAgent from "@/components/AIAgent";
 import FortuneTeller from "@/components/FortuneTeller";
@@ -31,6 +33,7 @@ function calcStreak(diaries: { created_at: string }[]): number {
 }
 
 export default function Home() {
+  const { data: session } = useSession();
   const [darkMode, setDarkMode] = useState(false);
   const [greeting, setGreeting] = useState("");
   const [streak, setStreak] = useState(0);
@@ -40,7 +43,12 @@ export default function Home() {
     setDarkMode(saved);
     document.documentElement.classList.toggle("dark", saved);
 
-    fetch(`${API}/api/diaries`)
+    // 로그인된 경우에만 일기 목록 가져오기 (인증 헤더 추가)
+    const fetchOptions = (session as any)?.accessToken
+      ? { headers: { Authorization: `Bearer ${(session as any).accessToken}` } }
+      : {};
+
+    fetch(`${API}/api/diaries`, fetchOptions)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) setStreak(calcStreak(data));
@@ -54,7 +62,7 @@ export default function Home() {
     else if (hour >= 12 && hour < 17) g = "나른한 오후네요 ☁️";
     else if (hour >= 17 && hour < 21) g = "포근한 저녁이에요 🌅";
     setGreeting(g);
-  }, []);
+  }, [session]);
 
   const toggleDark = () => {
     const next = !darkMode;
@@ -67,8 +75,12 @@ export default function Home() {
     <div className="flex flex-col items-center justify-center min-h-[100dvh] p-8 gap-12 bg-slate-50 dark:bg-slate-950 transition-colors">
       <header className="text-center flex flex-col items-center gap-6 mb-4">
         <div className="relative group cursor-pointer">
-          <div className="w-28 h-28 bg-white dark:bg-slate-900 rounded-[3rem] flex items-center justify-center text-5xl shadow-soft animate-float border-4 border-haru-sky-accent/20">
-            ☁️
+          <div className="w-28 h-28 bg-white dark:bg-slate-900 rounded-[3rem] flex items-center justify-center text-5xl shadow-soft animate-float border-4 border-haru-sky-accent/20 overflow-hidden">
+            {session?.user?.image ? (
+              <img src={session.user.image} alt="Profile" className="w-full h-full object-cover" />
+            ) : (
+              "☁️"
+            )}
           </div>
           {/* 스트릭 뱃지 */}
           {(() => {
@@ -92,9 +104,9 @@ export default function Home() {
             );
           })()}
         </div>
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-1.5 text-center">
           <h1 className="text-4xl font-black bg-gradient-to-br from-slate-900 via-slate-700 to-slate-400 dark:from-white dark:via-slate-200 dark:to-slate-500 bg-clip-text text-transparent tracking-tighter">
-            HaruLog
+            {session?.user?.name ? `${session.user.name} 님의 HaruLog` : "HaruLog"}
           </h1>
           <p className="text-sm font-bold text-slate-400 dark:text-slate-500 tracking-wide">
             {greeting}
@@ -102,13 +114,34 @@ export default function Home() {
         </div>
       </header>
 
-      <button
-        onClick={toggleDark}
-        className="absolute top-6 right-6 w-12 h-12 rounded-2xl bg-white dark:bg-slate-900 shadow-soft flex items-center justify-center text-xl hover:scale-110 active:scale-95 transition-all border border-slate-100 dark:border-slate-800"
-        title="다크모드 전환"
-      >
-        {darkMode ? "☀️" : "🌙"}
-      </button>
+      {/* 액션 버튼 그룹 (다크모드 & 로그인/로그아웃) */}
+      <div className="absolute top-6 right-6 flex items-center gap-3">
+        <button
+          onClick={toggleDark}
+          className="w-12 h-12 rounded-2xl bg-white dark:bg-slate-900 shadow-soft flex items-center justify-center text-xl hover:scale-110 active:scale-95 transition-all border border-slate-100 dark:border-slate-800"
+          title="다크모드 전환"
+        >
+          {darkMode ? "☀️" : "🌙"}
+        </button>
+
+        {session ? (
+          <button
+            onClick={() => signOut()}
+            className="w-12 h-12 rounded-2xl bg-white dark:bg-slate-900 shadow-soft flex items-center justify-center text-slate-400 hover:text-haru-pink-accent hover:scale-110 active:scale-95 transition-all border border-slate-100 dark:border-slate-800"
+            title="로그아웃"
+          >
+            <LogOut className="w-5 h-5" />
+          </button>
+        ) : (
+          <Link
+            href="/login"
+            className="w-12 h-12 rounded-2xl bg-haru-sky-deep dark:bg-haru-sky-accent shadow-soft flex items-center justify-center text-white dark:text-haru-sky-deep hover:scale-110 active:scale-95 transition-all"
+            title="로그인"
+          >
+            <LogIn className="w-5 h-5" />
+          </Link>
+        )}
+      </div>
 
       <main className="w-full max-w-sm flex flex-col gap-4">
         <Link href="/diary/write" className="fluffy-card flex items-center gap-4 group hover:shadow-xl hover:-translate-y-1">

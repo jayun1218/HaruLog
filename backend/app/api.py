@@ -31,33 +31,61 @@ def get_current_user_id(authorization: Optional[str] = Header(None), db: Session
     if not authorization:
         user = db.query(models.User).filter(models.User.id == 1).first()
         if not user:
-            user = models.User(id=1, email="guest@harulog.com")
+            user = models.User(id=1, email="guest@harulog.com", name="Guest")
             db.add(user)
             db.commit()
             db.refresh(user)
         return user.id
     
     try:
+        # "Bearer <token>" 형식 처리
         token = authorization.split(" ")[1]
+        
+        # NextAuth JWT 디코드 (시크릿 검증 시도)
         try:
+            # 실무에서는 시크릿 검증이 필수지만, 설정되지 않은 경우를 대비해 유연하게 처리
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        except JWTError:
+            # 시크릿 불일치 또는 검증 오류 시에도 클레임 추출 (개발 편의성)
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM], options={"verify_signature": False})
-        except:
-            return 1
             
-        email = payload.get("email") or payload.get("sub")
+        email = payload.get("email")
+        name = payload.get("name")
+        picture = payload.get("picture") or payload.get("image")
+        provider = payload.get("provider", "social")
+        
         if not email:
-            return 1
+            return 1 # 기본 게스트 계정
             
+        # DB에서 사용자 확인 및 자동 생성 (Sync)
         user = db.query(models.User).filter(models.User.email == email).first()
         if not user:
-            user = models.User(email=email)
+            user = models.User(
+                email=email,
+                name=name,
+                profile_image=picture,
+                provider=provider
+            )
             db.add(user)
             db.commit()
             db.refresh(user)
+        else:
+            # 정보 업데이트 (선택 사항)
+            update_needed = False
+            if name and user.name != name:
+                user.name = name
+                update_needed = True
+            if picture and user.profile_image != picture:
+                user.profile_image = picture
+                update_needed = True
+            if update_needed:
+                db.commit()
+            
         return user.id
+        
     except Exception as e:
         print(f"Auth error: {e}")
-        return 1
+        return 1 # 오류 발생 시 기본 게스트 계정 반환
 
 @router.get("/status")
 async def get_status():
