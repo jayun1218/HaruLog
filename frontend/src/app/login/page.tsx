@@ -51,15 +51,6 @@ export default function LoginPage() {
                         <ArrowRight className="w-5 h-5 text-slate-300 group-hover:text-haru-sky-deep transition-colors" />
                     </button>
 
-                    {/* Naver Login */}
-                    <button
-                        onClick={() => signIn("naver")}
-                        className="w-full h-14 bg-[#03C75A] rounded-2xl flex items-center px-6 gap-4 hover:brightness-105 transition-all active:scale-95 group shadow-md"
-                    >
-                        <div className="w-8 h-8 flex items-center justify-center font-black text-white text-xl">N</div>
-                        <span className="flex-1 text-left font-bold text-white">Naver로 계속하기</span>
-                        <ArrowRight className="w-5 h-5 text-white/50 group-hover:text-white transition-colors" />
-                    </button>
                 </div>
 
                 <div className="mt-12 text-slate-400 text-xs text-center border-t border-slate-100 pt-6 w-full">
