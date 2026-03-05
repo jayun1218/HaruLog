@@ -4,6 +4,7 @@ import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Chrome, ArrowRight } from "lucide-react";
+import { Browser } from "@capacitor/browser";
 
 export default function LoginPage() {
     const { data: session, status } = useSession();
@@ -44,9 +45,16 @@ export default function LoginPage() {
                 <div className="w-full space-y-4">
                     {/* Google Login */}
                     <button
-                        onClick={() => {
-                            const callbackUrl = isApp ? "/auth/app-redirect" : "/";
-                            signIn("google", { callbackUrl });
+                        onClick={async () => {
+                            const productionUrl = "https://haru-log.vercel.app";
+                            if (isApp) {
+                                await Browser.open({
+                                    url: `${productionUrl}/auth/signin-bridge`,
+                                    windowName: "_blank"
+                                });
+                            } else {
+                                signIn("google", { callbackUrl: "/" });
+                            }
                         }}
                         className="w-full h-14 bg-white border border-slate-200 rounded-2xl flex items-center px-6 gap-4 hover:bg-slate-50 transition-all active:scale-95 group shadow-sm"
                     >
