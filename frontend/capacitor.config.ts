@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'HaruLog',
   webDir: 'out',
   server: {
-    url: 'http://192.168.0.30:3000',
+    url: 'https://haru-log.vercel.app',
     cleartext: true,
     androidScheme: 'https'
   }

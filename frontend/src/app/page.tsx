@@ -74,10 +74,10 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[100dvh] p-4 sm:p-8 gap-8 sm:gap-12 bg-slate-50 dark:bg-slate-950 transition-colors">
-      <header className="text-center flex flex-col items-center gap-6 mb-4">
+    <div className="flex flex-col items-center justify-start min-h-[100dvh] pt-28 pb-8 sm:pt-20 px-4 sm:px-8 gap-8 sm:gap-12 bg-slate-50 dark:bg-slate-950 transition-colors">
+      <header className="text-center flex flex-col items-center gap-6 mb-4 mt-8 sm:mt-0">
         <div className="relative group cursor-pointer">
-          <div className="w-28 h-28 bg-white dark:bg-slate-900 rounded-[3rem] flex items-center justify-center text-5xl shadow-soft animate-float border-4 border-haru-sky-accent/20 overflow-hidden">
+          <div className="w-28 h-28 bg-white dark:bg-slate-900 rounded-[3rem] flex items-center justify-center text-5xl shadow-soft border-4 border-haru-sky-accent/20 overflow-hidden">
             {session?.user?.image ? (
               <img src={session.user.image} alt="Profile" className="w-full h-full object-cover" />
             ) : (
@@ -117,7 +117,7 @@ export default function Home() {
       </header>
 
       {/* 액션 버튼 그룹 (다크모드 & 로그인/로그아웃) */}
-      <div className="absolute top-6 right-6 flex items-center gap-3">
+      <div className="absolute top-10 sm:top-8 right-6 flex items-center gap-3">
         <button
           onClick={toggleDark}
           className="w-12 h-12 rounded-2xl bg-white dark:bg-slate-900 shadow-soft flex items-center justify-center text-xl hover:scale-110 active:scale-95 transition-all border border-slate-100 dark:border-slate-800"
@@ -149,7 +149,7 @@ export default function Home() {
         {/* 상단 통합 섹션 (모바일에서는 맨 위, 데스크톱에서는 왼쪽 또는 중앙) */}
         <div className="md:col-span-2 flex flex-col gap-6 mb-4">
           <Link href="/diary/write" className="fluffy-card flex items-center gap-4 sm:gap-6 group hover:shadow-xl hover:-translate-y-1 py-5 sm:py-8 px-5 sm:px-10 bg-gradient-to-r from-haru-sky-light/30 to-white dark:from-haru-sky-deep/10 dark:to-slate-900 border-2 border-haru-sky-accent/20">
-            <div className="w-14 h-14 sm:w-20 sm:h-20 bg-haru-sky-accent/20 dark:bg-haru-sky-accent/10 rounded-[2rem] flex items-center justify-center text-3xl sm:text-5xl group-hover:scale-110 transition-transform animate-float flex-shrink-0">✨</div>
+            <div className="w-14 h-14 sm:w-20 sm:h-20 bg-haru-sky-accent/20 dark:bg-haru-sky-accent/10 rounded-[2rem] flex items-center justify-center text-3xl sm:text-5xl group-hover:scale-110 transition-transform flex-shrink-0">✨</div>
             <div className="flex-1 min-w-0">
               <h2 className="font-black text-lg sm:text-2xl text-foreground mb-1 whitespace-nowrap">오늘을 기록하기</h2>
               <p className="text-xs sm:text-sm text-slate-400 font-medium">따뜻한 말 한마디로 하루를 마무리해요</p>

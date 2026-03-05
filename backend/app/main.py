@@ -47,11 +47,7 @@ app = FastAPI(title="MindTrace API", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "capacitor://localhost",
-    ],
+    allow_origins=["*"],  # 개발 및 배포 편의를 위해 모든 도메인 허용 (보안을 위해 나중에 Vercel 주소로 제한 가능)
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

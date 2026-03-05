@@ -149,8 +149,7 @@ export default function AIAgent() {
                     <span className="bg-white dark:bg-slate-800 text-haru-sky-deep px-3 py-1.5 rounded-xl text-[10px] font-black shadow-xl opacity-0 group-hover/btn:opacity-100 transition-all translate-x-2 group-hover/btn:translate-x-0 border border-haru-sky-accent/30 cursor-default">구름이와 대화</span>
                     <button
                         onClick={() => setIsOpen(true)}
-                        className={`w-16 h-16 bg-white dark:bg-slate-800 rounded-full shadow-2xl flex items-center justify-center text-4xl hover:scale-110 active:scale-95 transition-all border-4 border-haru-sky-accent ${mood === 'NORMAL' ? 'animate-bounce' : 'animate-pulse'}`}
-                        style={{ animationDuration: '3s' }}
+                        className={`w-16 h-16 bg-white dark:bg-slate-800 rounded-full shadow-2xl flex items-center justify-center text-4xl hover:scale-110 active:scale-95 transition-all border-4 border-haru-sky-accent`}
                     >
                         {moodEmojis[mood] || "☁️"}
                     </button>

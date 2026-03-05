@@ -36,7 +36,11 @@ export default function LoginPage() {
                 <div className="w-full space-y-4">
                     {/* Google Login */}
                     <button
-                        onClick={() => signIn("google")}
+                        onClick={() => {
+                            const isApp = typeof window !== "undefined" && (window as any).Capacitor?.isNativePlatform;
+                            const callbackUrl = isApp ? "/auth/app-redirect" : "/";
+                            signIn("google", { callbackUrl });
+                        }}
                         className="w-full h-14 bg-white border border-slate-200 rounded-2xl flex items-center px-6 gap-4 hover:bg-slate-50 transition-all active:scale-95 group shadow-sm"
                     >
                         <div className="w-8 h-8 flex items-center justify-center">

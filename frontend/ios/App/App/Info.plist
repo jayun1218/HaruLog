@@ -47,5 +47,16 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.jayun.harulog</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>harulog</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>
