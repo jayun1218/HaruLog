@@ -74,7 +74,7 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-start min-h-[100dvh] pt-28 pb-8 sm:pt-20 px-4 sm:px-8 gap-8 sm:gap-12 bg-slate-50 dark:bg-slate-950 transition-colors">
+    <div className="flex flex-col items-center justify-start min-h-[100dvh] pt-36 pb-8 sm:pt-20 px-4 sm:px-8 gap-8 sm:gap-12 bg-slate-50 dark:bg-slate-950 transition-colors">
       <header className="text-center flex flex-col items-center gap-6 mb-4 mt-8 sm:mt-0">
         <div className="relative group cursor-pointer">
           <div className="w-28 h-28 bg-white dark:bg-slate-900 rounded-[3rem] flex items-center justify-center text-5xl shadow-soft border-4 border-haru-sky-accent/20 overflow-hidden">
