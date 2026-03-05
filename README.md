@@ -26,6 +26,8 @@
 | 🍀 **오늘의 운세** | 매일 새로운 행운 메시지 |
 | 🃏 **타로 3장 스프레드** | 과거·현재·미래 카드 선택, DALL-E 3가 테마별 카드 이미지 실시간 생성 |
 | 💌 **AI 월간 리포트** | 한 달의 감정 흐름을 종합 분석한 자동 리포트 |
+| 🔑 **Google 소셜 로그인** | NextAuth.js 기반 안전하고 간편한 구글 계정 연동 |
+| 📱 **반응형 UI (Web & iOS)** | 데스크톱은 효율적인 다단 레이아웃, 모바일은 집중도 높은 앱 디자인 제공 |
 
 ### 기록 보기 & 관리
 | 기능 | 설명 |
@@ -52,8 +54,12 @@
 ### 1. 환경 변수 설정
 프로젝트 루트에 `.env` 파일을 생성하세요:
 ```env
-DATABASE_URL=postgresql://jayun@localhost:5432/mindtrace
+DATABASE_URL=postgresql://user:password@localhost:5432/mindtrace
 OPENAI_API_KEY=sk-...
+NEXTAUTH_SECRET=your_secret_key
+NEXTAUTH_URL=http://localhost:3000
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
 ```
 
 ### 2. 백엔드 실행
@@ -109,8 +115,9 @@ HaruLog/
 - [x] 스트릭 뱃지 시스템 (🌱🔥⭐👑)
 - [x] SNS 공유 카드 (PNG 다운로드)
 - [x] 🍯 감정 믹서 (Mood Mixer) & 고유 컬러 생성
-- [ ] 소셜 로그인 (Auth.js v5)
-- [ ] 모바일 앱 버전 (React Native)
+- [x] Google 소셜 로그인 (NextAuth.js)
+- [x] 웹/모바일(iOS) 반응형 레이아웃 최적화
+- [ ] 모바일 앱 패키징 (Capacitor/React Native)
 
 ---
 
