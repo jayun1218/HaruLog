@@ -25,14 +25,33 @@ export default function AIAgent() {
 
     const scrollRef = useRef<HTMLDivElement>(null);
 
-    // 타로/운세 관련 메시지는 대화 목록에서 숨김
-    const filterChatMessages = (msgs: { role: string; content: string }[]) =>
-        msgs.filter(m => !(
-            m.role === "user" && (
-                m.content?.includes("타로") ||
-                m.content?.includes("운세")
-            )
-        ));
+    // 타로/운세 관련 메시지는 대화 목록에서 숨김 (user 요청 + assistant 응답 모두)
+    const tarotKeywords = ["타로", "운세", "🃏", "🍀", "카드", "과거", "현재", "미래", "스프레드"];
+
+    const filterChatMessages = (msgs: { role: string; content: string }[]) => {
+        const filtered: { role: string; content: string }[] = [];
+        let skipNext = false;
+
+        for (const m of msgs) {
+            // user 가 타로/운세 관련 요청을 보내면 해당 메시지와 바로 뒤 assistant 응답 모두 건너뜀
+            if (m.role === "user" && tarotKeywords.some(k => m.content?.includes(k))) {
+                skipNext = true;
+                continue;
+            }
+            if (skipNext && m.role === "assistant") {
+                skipNext = false;
+                continue;
+            }
+            // assistant 응답이라도 타로 관련 키워드가 여러 개 포함된 경우 제거
+            if (m.role === "assistant" && tarotKeywords.filter(k => m.content?.includes(k)).length >= 2) {
+                skipNext = false;
+                continue;
+            }
+            skipNext = false;
+            filtered.push(m);
+        }
+        return filtered;
+    };
 
     useEffect(() => {
         if (isOpen) {
