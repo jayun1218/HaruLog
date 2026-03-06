@@ -144,7 +144,7 @@ export default function DiaryList() {
     const selectedDiaries = selectedDate ? (diaryMap[selectedDate] || []) : [];
 
     return (
-        <div className="flex flex-col p-5 min-h-[100dvh] max-w-6xl mx-auto transition-colors">
+        <div className="flex flex-col px-5 pt-14 pb-0 min-h-[100dvh] max-w-6xl mx-auto transition-colors">
             <header className="flex items-center gap-4 mb-8">
                 <Link href="/" className="p-2 -ml-2 text-slate-400 hover:text-foreground text-xl">←</Link>
                 <h1 className="text-3xl font-black flex-1 dark:text-slate-100 italic tracking-tighter">기록 모아보기</h1>
@@ -216,8 +216,8 @@ export default function DiaryList() {
                                         }
                                     }}
                                         className={`relative flex flex-col items-center justify-center rounded-2xl transition-all ${isSelected
-                                                ? "ring-2 ring-white ring-offset-1 shadow-lg scale-105 z-10"
-                                                : "hover:brightness-110"
+                                            ? "ring-2 ring-white ring-offset-1 shadow-lg scale-105 z-10"
+                                            : "hover:brightness-110"
                                             }`}
                                         style={{
                                             height: '52px',
@@ -232,10 +232,10 @@ export default function DiaryList() {
                                         }}
                                     >
                                         <span className={`text-[13px] font-black ${(hasDiary || isSelected)
-                                                ? "text-white drop-shadow-sm"
-                                                : isToday
-                                                    ? "text-haru-sky-deep underline decoration-2 underline-offset-2"
-                                                    : "text-slate-700 dark:text-slate-300"
+                                            ? "text-white drop-shadow-sm"
+                                            : isToday
+                                                ? "text-haru-sky-deep underline decoration-2 underline-offset-2"
+                                                : "text-slate-700 dark:text-slate-300"
                                             }`}>{day}</span>
                                     </button>
                                 );

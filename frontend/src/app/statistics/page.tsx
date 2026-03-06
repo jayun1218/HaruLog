@@ -107,7 +107,7 @@ export default function Statistics() {
     }, [stats]);
 
     return (
-        <div className="flex flex-col p-6 min-h-[100dvh] max-w-md mx-auto transition-colors pb-12">
+        <div className="flex flex-col px-6 pt-14 pb-12 min-h-[100dvh] max-w-md mx-auto transition-colors">
             <header className="flex items-center gap-4 mb-8">
                 <Link href="/" className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 shadow-soft flex items-center justify-center text-slate-400 hover:text-foreground transition-all">
                     <ArrowLeft size={20} />

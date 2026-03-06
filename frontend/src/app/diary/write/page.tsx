@@ -230,8 +230,8 @@ function DiaryWriteInner() {
 
     return (
         <div className={`transition-colors duration-700 bg-white dark:bg-slate-950 flex flex-col items-center ${step === 3
-            ? "h-[100dvh] overflow-hidden px-4 pt-4 pb-0"
-            : "min-h-[100dvh] p-6 pb-12"
+            ? "h-[100dvh] overflow-hidden px-4 pt-14 pb-0"
+            : "min-h-[100dvh] px-6 pt-14 pb-12"
             }`}>
 
             {/* Header */}

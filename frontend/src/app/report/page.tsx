@@ -36,7 +36,7 @@ export default function MonthlyReport() {
     }, [year, month, backendToken]);
 
     return (
-        <div className="flex flex-col p-6 min-h-[100dvh] max-w-md mx-auto transition-colors">
+        <div className="flex flex-col px-6 pt-14 pb-0 min-h-[100dvh] max-w-md mx-auto transition-colors">
             <header className="flex items-center gap-4 mb-8">
                 <Link href="/" className="p-2 -ml-2 text-slate-400 hover:text-foreground text-xl">←</Link>
                 <h1 className="text-2xl font-bold">💌 월간 AI 리포트</h1>
