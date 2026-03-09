@@ -196,30 +196,6 @@ export default function Home() {
           </Link>
         </div>
 
-        <div className="md:col-span-2">
-          <button
-            onClick={async () => {
-              if (!('Notification' in window)) { toast('이 브라우저는 알림을 지원하지 않아요.', 'error'); return; }
-              const perm = await Notification.requestPermission();
-              if (perm === 'granted') {
-                const h = prompt('알림 시간 (시 단위, 0-23):', '21');
-                if (h !== null) {
-                  localStorage.setItem('reminderHour', h);
-                  toast(`매일 ${h}시에 일기 작성 알림을 설정했어요 ✔️`, 'success');
-                }
-              } else {
-                toast('알림 권한을 허용해주세요.', 'info');
-              }
-            }}
-            className="fluffy-card flex items-center gap-4 group w-full text-left"
-          >
-            <div className="w-12 h-12 bg-slate-50 dark:bg-slate-900 rounded-2xl flex items-center justify-center text-xl group-hover:rotate-12 transition-transform">🔔</div>
-            <div>
-              <h2 className="font-bold text-sm text-foreground">일기 리마인더</h2>
-              <p className="text-xs text-slate-400">알림 설정</p>
-            </div>
-          </button>
-        </div>
       </main>
 
       <footer className="mt-12 text-slate-400 text-[10px] font-bold tracking-widest uppercase opacity-50">
