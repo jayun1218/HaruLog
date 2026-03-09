@@ -34,6 +34,7 @@ export default function TarotReader() {
     const [isReadingLoading, setIsReadingLoading] = useState(false);
     const [archive, setArchive] = useState<any[]>([]);
     const [viewMode, setViewMode] = useState<"main" | "archive">("main");
+    const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
 
     const CARD_COUNT = 7;
 
@@ -224,17 +225,30 @@ export default function TarotReader() {
                                     {archive.length === 0 ? (
                                         <div className="py-20 text-center text-slate-400 text-sm">아직 저장된 기록이 없어요.</div>
                                     ) : (
-                                        archive.map((item, idx) => (
-                                            <div key={idx} className="p-5 bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col gap-3">
-                                                <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-700/50 pb-2">
-                                                    <span className="text-xs font-black text-purple-500 bg-purple-50 dark:bg-purple-900/20 px-3 py-1 rounded-full">{item.date}</span>
-                                                    <span className="text-[10px] font-bold text-slate-400">
-                                                        {item.selected_cards ? `🃏 ${item.selected_cards.join(" · ")}번` : item.selected_card ? `🃏 ${item.selected_card}번` : ""}
-                                                    </span>
+                                        archive.map((item, idx) => {
+                                            const isExpanded = expandedIdx === idx;
+                                            return (
+                                                <div
+                                                    key={idx}
+                                                    onClick={() => setExpandedIdx(isExpanded ? null : idx)}
+                                                    className={`p-5 bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col gap-3 cursor-pointer transition-all duration-300 hover:shadow-md active:scale-[0.99] ${isExpanded ? "ring-2 ring-purple-100 dark:ring-purple-900/30" : ""}`}
+                                                >
+                                                    <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-700/50 pb-2">
+                                                        <span className="text-xs font-black text-purple-500 bg-purple-50 dark:bg-purple-900/20 px-3 py-1 rounded-full">{item.date}</span>
+                                                        <span className="text-[10px] font-bold text-slate-400">
+                                                            {item.selected_cards ? `🃏 ${item.selected_cards.join(" · ")}번` : item.selected_card ? `🃏 ${item.selected_card}번` : ""}
+                                                            {isExpanded ? " ▴" : " ▾"}
+                                                        </span>
+                                                    </div>
+                                                    <div className={`text-xs text-slate-600 dark:text-slate-400 leading-relaxed whitespace-pre-wrap transition-all duration-300 ${isExpanded ? "" : "line-clamp-6"}`}>
+                                                        {item.tarot}
+                                                    </div>
+                                                    {!isExpanded && (
+                                                        <div className="text-center text-[9px] text-purple-300 font-bold animate-pulse">클릭하여 전체 보기</div>
+                                                    )}
                                                 </div>
-                                                <div className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed whitespace-pre-wrap line-clamp-6">{item.tarot}</div>
-                                            </div>
-                                        ))
+                                            );
+                                        })
                                     )}
                                 </div>
                             ) : phase === "theme" ? (

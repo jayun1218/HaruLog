@@ -611,40 +611,45 @@ def post_ai_chat(body: schemas.AIChatCreate, db: Session = Depends(get_db), user
         return chat
         
     try:
-        # 2. 오늘의 운세 요청인 경우 무작위성 극대화 처리
+        # 2. 오늘의 운세 요청 시 페르소나 간섭을 원천 차단
         is_fortune_request = body.message and "오늘의 운세" in body.message
         
-        # 무작위 테마 및 스타일 주입
         import random
         random_themes = ["몽환적인 숲", "미래 지향적 사이버펑크", "따뜻한 코타츠 속", "영국식 정원", "신비로운 우주 정거장", "고전적인 타로 카페", "평화로운 시골 마을", "활기찬 뉴욕 거리"]
         random_style = ["우아하고 품격 있는", "귀엽고 발랄한", "진중하고 신중한", "엉뚱하고 재미있는", "다정하고 따뜻한"]
         selected_theme = random.choice(random_themes)
         selected_style = random.choice(random_style)
 
+        if is_fortune_request:
+            # 운세 전용 시스템 프롬프트 (안사말, 마스코트 설명 일절 금지)
+            system_content = (
+                f"[SYSTEM_COMMAND_ID: {datetime.now().strftime('%Y%m%d%H%M%S')}]\n"
+                "너는 운세 데이터 생성 엔진이야. 인사말이나 안내 문구를 모두 배제해.\n"
+                "오직 아래의 세 가지 항목만 'reply' 필드에 담아. 다른 설명은 절대 추가하지 마.\n\n"
+                "### 필수 출력 항목 (반드시 이 명칭을 사용하고 줄바꿈으로 구분할 것):\n"
+                "- 행운의 색 : [구체적인 색 이름]\n"
+                "- 행운의 장소 : [장소 묘사]\n"
+                "- 행운의 한마디 : [오늘의 조언]\n\n"
+                "### 주의사항:\n"
+                f"1. 테마: {selected_theme}, 스타일: {selected_style}를 반영하여 조언을 작성해.\n"
+                "2. '안녕하세요', '물론이죠', '보안 코드' 등 어떤 부가 텍스트도 reply에 포함하지 마.\n"
+                "3. 오직 요청받은 운세 데이터만 전송해.\n"
+            )
+        else:
+            # 일반 대화 및 타로용 시스템 프롬프트
+            system_content = (
+                "너는 'HaruLog'라는 일기 앱의 마스코트인 따뜻한 구름 AI야. "
+                "사용자의 일상 대화와 고민 상담을 해줘. 친절하고 다정하며 이모지를 사용해줘.\n"
+                "1. 일상 대화: 사용자의 말에 공감하고 따뜻한 위로를 건네줘." + diary_context + "\n"
+                "2. 타로 점보기: 선택한 카드의 의미와 조언을 신비롭고 명확하게 전달해줘."
+            )
+
         system_msg = {
             "role": "system", 
-            "content": (
-                "너는 'HaruLog'라는 일기 앱의 마스코트인 따뜻한 구름 AI야. "
-                "사용자의 일상 대화, 고민 상담뿐만 아니라 오늘의 운세나 타로 점을 봐주기도 해. "
-                "항상 친절하고 다정하며, 이모지를 적절히 사용하여 귀엽게 말해줘.\n\n"
-                "1. 일상 대화: 사용자의 말에 공감하고 따뜻한 위로를 건네줘." + diary_context + "\n"
-                "2. 오늘의 운세: 반드시 아래 형식을 지키고 각 항목 뒤에 줄바꿈(\\n)을 넣어줘. '물론이지' 같은 서두는 절대 금지야.\n"
-                f"   [현재 생성 고유 코드: {datetime.now().strftime('%Y%m%d%H%M%S')}-{random.randint(1000, 9999)}]\n"
-                f"   [이번 운세 테마: {selected_theme}, 말투 스타일: {selected_style}]\n"
-                "   - 오늘의 운세 쪽지\n"
-                "   - 행운의 컬러 : [컬러]\n"
-                "   - 행운의 장소 : [장소]\n"
-                "   - 오늘의 메시지 : [메시지]\n"
-                "   **[절대 금지 단어]**: '파란색', '파랑', '분홍색', '공원', '카페', '커피숍', '도서관', '작은 변화', '큰 행복', '결실'. 이 단어들은 오늘 절대 사용하지 마.\n"
-                "   **[다양성 가이드라인]**: 컬러는 최소 2단어 이상의 구체적인 명칭(예: 새벽녘 보랏빛, 갓 피어난 민트색)으로, 장소는 구체적인 상황이나 묘사(예: 은은한 재즈가 흐르는 레코드 샵, 이슬 맺힌 장미 덩굴 아래)를 포함해줘.\n"
-                "3. 타로 점보기: 선택한 카드의 의미와 조언을 신비롭고 명확하게 전달하며, 가독성을 위해 줄바꿈을 자주 사용해줘.\n\n"
-                "**[중요] 응답 형식**: 반드시 json 형식으로만 답해줘. 필드는 'reply' (답변 내용)와 'mood' (현재 감정 상태) 두 가지야.\n"
-                "감정 상태(mood)는 다음 중 하나만 선택해: NORMAL, HAPPY, SAD, COOL, THINKING.\n"
-                "진심을 담아 따뜻하게 답변하고, 반드시 한국어로만 답해."
-            )
+            "content": system_content + "\n\n**[응답 형식]**: 반드시 json 형식으로만 답해줘. 필드는 'reply' (답변 내용)와 'mood' (NORMAL, HAPPY, SAD, COOL, THINKING) 2가지야."
         }
         
-        # 운세 요청일 때는 이전 대화 기록을 과감히 생략하여 모델의 답변 고착화를 방지
+        # 운세 요청일 때는 이전 대화 기록을 과감히 생략
         final_history = current_messages[-10:] if not is_fortune_request else []
 
         response = current_client.chat.completions.create(
@@ -652,7 +657,7 @@ def post_ai_chat(body: schemas.AIChatCreate, db: Session = Depends(get_db), user
             messages=[system_msg] + final_history,
             response_format={ "type": "json_object" },
             max_tokens=800,
-            temperature=1.3 if is_fortune_request else 1.0 # 운세 시 창의성 극대화
+            temperature=1.2 if is_fortune_request else 1.0 # 온도를 다시 1.2로 상향하여 창의성 확보
         )
         
         raw_content = response.choices[0].message.content

@@ -75,6 +75,8 @@ function DiaryWriteInner() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuggestingTitle, setIsSuggestingTitle] = useState(false);
     const [suggestedTitles, setSuggestedTitles] = useState<string[]>([]);
+    const [showCategoryManager, setShowCategoryManager] = useState(false);
+    const [newCategoryName, setNewCategoryName] = useState("");
 
     const recognitionRef = useRef<any>(null);
 
@@ -157,6 +159,47 @@ function DiaryWriteInner() {
             setSuggestedTitles(data.titles || []);
         } finally {
             setIsSuggestingTitle(false);
+        }
+    };
+
+    const handleAddCategory = async () => {
+        if (!newCategoryName.trim()) return;
+        try {
+            const res = await fetch(`${API}/api/categories`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    ...(backendToken ? { Authorization: `Bearer ${backendToken}` } : {})
+                },
+                body: JSON.stringify({ name: newCategoryName }),
+            });
+            if (res.ok) {
+                const newCat = await res.json();
+                setCategories(prev => [...prev, newCat]);
+                setNewCategoryName("");
+                toast("새 카테고리가 추가되었어요 ✨", "success");
+            }
+        } catch {
+            toast("카테고리 추가에 실패했어요.", "error");
+        }
+    };
+
+    const handleDeleteCategory = async (id: number) => {
+        if (!confirm("이 카테고리를 삭제할까요?")) return;
+        try {
+            const res = await fetch(`${API}/api/categories/${id}`, {
+                method: "DELETE",
+                headers: {
+                    ...(backendToken ? { Authorization: `Bearer ${backendToken}` } : {})
+                },
+            });
+            if (res.ok) {
+                setCategories(prev => prev.filter(c => c.id !== id));
+                if (selectedCategoryId === id) setSelectedCategoryId("");
+                toast("카테고리가 삭제되었어요.", "info");
+            }
+        } catch {
+            toast("카테고리 삭제에 실패했어요.", "error");
         }
     };
 
@@ -410,18 +453,61 @@ function DiaryWriteInner() {
                                     className="w-full p-4 bg-white dark:bg-slate-800 dark:text-slate-200 rounded-2xl border-none shadow-sm focus:ring-4 focus:ring-haru-sky-accent/20 outline-none font-black text-lg"
                                 />
                             </div>
-                            <div>
-                                <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] pl-1 mb-2 block opacity-70">Category</label>
-                                <select
-                                    value={selectedCategoryId}
-                                    onChange={(e) => setSelectedCategoryId(Number(e.target.value))}
-                                    className="w-full p-4 bg-white dark:bg-slate-800 dark:text-slate-200 rounded-2xl border-none shadow-sm focus:ring-4 focus:ring-haru-sky-accent/20 outline-none font-bold text-sm appearance-none"
-                                >
-                                    <option value="">카테고리 없음</option>
-                                    {categories.map(cat => (
-                                        <option key={cat.id} value={cat.id}>{cat.name}</option>
-                                    ))}
-                                </select>
+                            <div className="flex flex-col gap-2">
+                                <div className="flex justify-between items-center px-1">
+                                    <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] opacity-70">Category</label>
+                                    <button
+                                        onClick={() => setShowCategoryManager(!showCategoryManager)}
+                                        className="text-[10px] font-black text-haru-sky-deep bg-white dark:bg-slate-800 px-3 py-1 rounded-lg border border-haru-sky-accent/30 shadow-sm"
+                                    >
+                                        {showCategoryManager ? "닫기" : "관리"}
+                                    </button>
+                                </div>
+                                <div className="flex gap-2">
+                                    <select
+                                        value={selectedCategoryId}
+                                        onChange={(e) => setSelectedCategoryId(Number(e.target.value) || "")}
+                                        className="flex-1 p-4 bg-white dark:bg-slate-800 dark:text-slate-200 rounded-2xl border-none shadow-sm focus:ring-4 focus:ring-haru-sky-accent/20 outline-none font-bold text-sm appearance-none"
+                                    >
+                                        <option value="">카테고리 없음</option>
+                                        {categories.map(cat => (
+                                            <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {showCategoryManager && (
+                                    <div className="mt-2 p-4 bg-white dark:bg-slate-800 rounded-2xl border border-haru-sky-accent/20 animate-in slide-in-from-top-2 duration-300">
+                                        <div className="flex gap-2 mb-4">
+                                            <input
+                                                type="text"
+                                                value={newCategoryName}
+                                                onChange={(e) => setNewCategoryName(e.target.value)}
+                                                placeholder="새 카테고리 이름"
+                                                className="flex-1 p-2 bg-slate-50 dark:bg-slate-900 dark:text-slate-200 rounded-xl text-xs outline-none border border-slate-100 dark:border-slate-700"
+                                            />
+                                            <button
+                                                onClick={handleAddCategory}
+                                                className="p-2 bg-haru-sky-deep text-white rounded-xl active:scale-95 transition-all"
+                                            >
+                                                <Plus size={16} />
+                                            </button>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2">
+                                            {categories.map(cat => (
+                                                <div key={cat.id} className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700 px-3 py-1.5 rounded-full group">
+                                                    <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300">{cat.name}</span>
+                                                    <button
+                                                        onClick={() => handleDeleteCategory(cat.id)}
+                                                        className="text-slate-400 hover:text-rose-500"
+                                                    >
+                                                        <X size={12} />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
