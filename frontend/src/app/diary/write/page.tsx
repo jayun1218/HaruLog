@@ -421,9 +421,9 @@ function DiaryWriteInner() {
 
             {/* Step 3: Writing */}
             {step === 3 && (
-                <div className="w-full max-w-5xl flex-1 flex flex-col md:grid md:grid-cols-[280px,1fr] gap-4 md:gap-8 animate-in slide-in-from-right-8 fade-in duration-500 overflow-hidden">
+                <div className="w-full max-w-5xl flex-1 flex flex-col md:grid md:grid-cols-[280px,1fr] gap-4 md:gap-8 animate-in slide-in-from-bottom-8 fade-in duration-500 overflow-hidden">
                     {/* 색상 블록: 모바일=상단 compact bar, 데스크탑=왼쪽 sticky */}
-                    <div className="shrink-0 md:overflow-y-auto md:pb-8">
+                    <div className="shrink-0 md:overflow-y-auto md:pb-8 overflow-x-hidden">
                         {/* Compact Mood Preview */}
                         <div className="flex items-center gap-4 p-4 md:p-6 rounded-2xl md:rounded-3xl bg-white dark:bg-slate-900 border-2 border-slate-50 dark:border-slate-800 shadow-soft">
                             <div className="w-12 h-12 md:w-20 md:h-20 rounded-xl md:rounded-2xl shadow-lg shrink-0" style={{ backgroundColor: mixedColor }}></div>
@@ -441,7 +441,7 @@ function DiaryWriteInner() {
                     </div>
 
                     {/* 오른쪽: 날짜+카테고리+제목+내용 — 이 영역만 스크롤 */}
-                    <div className="flex-1 overflow-y-auto pb-8 flex flex-col gap-5">
+                    <div className="flex-1 overflow-y-auto overflow-x-hidden pb-8 flex flex-col gap-5">
                         {/* Date + Category (스크롤과 함께 이동) */}
                         <div className="flex flex-col gap-4 bg-slate-50/50 dark:bg-slate-900/50 p-5 rounded-[2rem] border border-slate-100 dark:border-slate-800">
                             <div>

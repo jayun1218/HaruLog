@@ -381,6 +381,39 @@ async def upload_image(file: UploadFile = File(...), diary_id: int = None, db: S
             db.commit()
     return {"image_url": image_url}
 
+@router.delete("/diaries/{diary_id}/image")
+def delete_diary_image(diary_id: int, db: Session = Depends(get_db), user_id: int = Depends(get_current_user_id)):
+    diary = db.query(models.Diary).filter(models.Diary.id == diary_id, models.Diary.user_id == user_id).first()
+    if not diary:
+        raise HTTPException(status_code=404, detail="Diary not found")
+    
+    if diary.image_url:
+        try:
+            # 실제 파일 삭제
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            # image_url format: /uploads/filename.ext
+            filename = diary.image_url.split("/")[-1]
+            filepath = os.path.join(base_dir, "uploads", filename)
+            
+            if os.path.exists(filepath):
+                os.remove(filepath)
+                print(f"DEBUG: File deleted: {filepath}")
+            else:
+                # 대체 경로 확인
+                fallback_path = os.path.join(os.getcwd(), "uploads", filename)
+                if os.path.exists(fallback_path):
+                    os.remove(fallback_path)
+                    print(f"DEBUG: Fallback file deleted: {fallback_path}")
+        except Exception as e:
+            print(f"DEBUG: Failed to delete physical file: {e}")
+            # 파일 삭제 실패는 로그만 남기고 DB 업데이트는 진행
+        
+        diary.image_url = None
+        db.commit()
+        db.refresh(diary)
+    
+    return {"message": "Image deleted successfully"}
+
 # --- AI 대화형 일기 ---
 class ChatMessage(schemas.BaseModel):
     messages: List[dict]

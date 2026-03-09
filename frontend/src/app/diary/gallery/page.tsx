@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { ArrowLeft, Image as ImageIcon, Calendar, Heart, Search } from "lucide-react";
+import { ArrowLeft, Image as ImageIcon, Calendar, Heart, Search, X } from "lucide-react";
+import { toast } from "@/components/Toast";
 import { useBackendToken } from "@/components/AuthProvider";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -40,6 +41,30 @@ export default function Gallery() {
             })
             .catch(() => setIsLoading(false));
     }, [backendToken, status]);
+
+    const handleDeleteImage = async (diaryId: number, e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (!confirm("이 사진을 정말 삭제할까요?")) return;
+        if (!backendToken) return;
+
+        try {
+            const res = await fetch(`${API}/api/diaries/${diaryId}/image`, {
+                method: "DELETE",
+                headers: { "Authorization": `Bearer ${backendToken}` }
+            });
+
+            if (res.ok) {
+                setDiaries(prev => prev.filter(d => d.id !== diaryId));
+                toast("사진이 삭제되었습니다. ✨", "info");
+            } else {
+                toast("사진 삭제에 실패했습니다.", "error");
+            }
+        } catch {
+            toast("서버와 통신 중 오류가 발생했습니다.", "error");
+        }
+    };
 
     const filteredDiaries = diaries.filter(d =>
         d.title.toLowerCase().includes(searchQ.toLowerCase())
@@ -102,6 +127,12 @@ export default function Gallery() {
                                     <span className="text-[10px] text-white/70">{diary.created_at.slice(5, 10)}</span>
                                 </div>
                             </div>
+                            <button
+                                onClick={(e) => handleDeleteImage(diary.id, e)}
+                                className="absolute top-3 left-3 w-8 h-8 bg-black/40 hover:bg-rose-500/80 backdrop-blur-sm text-white rounded-xl flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 shadow-soft"
+                            >
+                                <X size={16} />
+                            </button>
                             {diary.mood && (
                                 <div className="absolute top-3 right-3 w-8 h-8 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-xl flex items-center justify-center text-lg shadow-soft">
                                     {diary.mood}
