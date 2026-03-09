@@ -564,7 +564,7 @@ def get_ai_chat_archive(db: Session = Depends(get_db), user_id: int = Depends(ge
 
 @router.post("/ai-chat", response_model=schemas.AIChatResponse)
 def post_ai_chat(body: schemas.AIChatCreate, db: Session = Depends(get_db), user_id: int = Depends(get_current_user_id)):
-    from datetime import date
+    from datetime import datetime, date
     today = date.today().isoformat()
     
     # 1. 기존의 오늘 대화방 조회
@@ -611,6 +611,16 @@ def post_ai_chat(body: schemas.AIChatCreate, db: Session = Depends(get_db), user
         return chat
         
     try:
+        # 2. 오늘의 운세 요청인 경우 무작위성 극대화 처리
+        is_fortune_request = body.message and "오늘의 운세" in body.message
+        
+        # 무작위 테마 및 스타일 주입
+        import random
+        random_themes = ["몽환적인 숲", "미래 지향적 사이버펑크", "따뜻한 코타츠 속", "영국식 정원", "신비로운 우주 정거장", "고전적인 타로 카페", "평화로운 시골 마을", "활기찬 뉴욕 거리"]
+        random_style = ["우아하고 품격 있는", "귀엽고 발랄한", "진중하고 신중한", "엉뚱하고 재미있는", "다정하고 따뜻한"]
+        selected_theme = random.choice(random_themes)
+        selected_style = random.choice(random_style)
+
         system_msg = {
             "role": "system", 
             "content": (
@@ -619,10 +629,14 @@ def post_ai_chat(body: schemas.AIChatCreate, db: Session = Depends(get_db), user
                 "항상 친절하고 다정하며, 이모지를 적절히 사용하여 귀엽게 말해줘.\n\n"
                 "1. 일상 대화: 사용자의 말에 공감하고 따뜻한 위로를 건네줘." + diary_context + "\n"
                 "2. 오늘의 운세: 반드시 아래 형식을 지키고 각 항목 뒤에 줄바꿈(\\n)을 넣어줘. '물론이지' 같은 서두는 절대 금지야.\n"
-                "오늘의 운세 쪽지\n"
-                "행운의 컬러 : [컬러]\n"
-                "행운의 장소 : [장소]\n"
-                "오늘의 메시지 : [메시지]\n"
+                f"   [현재 생성 고유 코드: {datetime.now().strftime('%Y%m%d%H%M%S')}-{random.randint(1000, 9999)}]\n"
+                f"   [이번 운세 테마: {selected_theme}, 말투 스타일: {selected_style}]\n"
+                "   - 오늘의 운세 쪽지\n"
+                "   - 행운의 컬러 : [컬러]\n"
+                "   - 행운의 장소 : [장소]\n"
+                "   - 오늘의 메시지 : [메시지]\n"
+                "   **[절대 금지 단어]**: '파란색', '파랑', '분홍색', '공원', '카페', '커피숍', '도서관', '작은 변화', '큰 행복', '결실'. 이 단어들은 오늘 절대 사용하지 마.\n"
+                "   **[다양성 가이드라인]**: 컬러는 최소 2단어 이상의 구체적인 명칭(예: 새벽녘 보랏빛, 갓 피어난 민트색)으로, 장소는 구체적인 상황이나 묘사(예: 은은한 재즈가 흐르는 레코드 샵, 이슬 맺힌 장미 덩굴 아래)를 포함해줘.\n"
                 "3. 타로 점보기: 선택한 카드의 의미와 조언을 신비롭고 명확하게 전달하며, 가독성을 위해 줄바꿈을 자주 사용해줘.\n\n"
                 "**[중요] 응답 형식**: 반드시 json 형식으로만 답해줘. 필드는 'reply' (답변 내용)와 'mood' (현재 감정 상태) 두 가지야.\n"
                 "감정 상태(mood)는 다음 중 하나만 선택해: NORMAL, HAPPY, SAD, COOL, THINKING.\n"
@@ -630,11 +644,15 @@ def post_ai_chat(body: schemas.AIChatCreate, db: Session = Depends(get_db), user
             )
         }
         
+        # 운세 요청일 때는 이전 대화 기록을 과감히 생략하여 모델의 답변 고착화를 방지
+        final_history = current_messages[-10:] if not is_fortune_request else []
+
         response = current_client.chat.completions.create(
             model="gpt-4o",
-            messages=[system_msg] + current_messages[-10:], # 최근 10개 메시지만 문맥으로 전달
+            messages=[system_msg] + final_history,
             response_format={ "type": "json_object" },
-            max_tokens=800
+            max_tokens=800,
+            temperature=1.3 if is_fortune_request else 1.0 # 운세 시 창의성 극대화
         )
         
         raw_content = response.choices[0].message.content
